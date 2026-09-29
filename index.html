@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>小鍋日記｜一個人的快煮鍋餐桌</title>
+<title>小鍋日記｜兩個人的快煮鍋餐桌</title>
 <meta name="description" content="快煮鍋一人份菜單日曆：排菜、對照冰箱、一鍵列出本週所需食材。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍲</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,7 +56,19 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:400;letter-spacing:.04em;margin
 .links{display:flex;gap:4px}
 .links button{background:none;border:0;padding:6px 10px;font-size:14.5px;letter-spacing:.12em;color:var(--night-soft);border-bottom:1px solid transparent;border-radius:0}
 .links button[aria-current="page"]{color:var(--night-ink);border-bottom-color:var(--blush)}
-@media (max-width:420px){.brand{letter-spacing:.3em;font-size:15px;margin-right:0}.links button{padding:6px 7px;font-size:13.5px;letter-spacing:.06em}}
+.navr{display:flex;align-items:center;gap:6px}
+.acct{position:relative;flex:none;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:transparent;color:var(--night-ink);font-size:15px;line-height:1;display:grid;place-items:center;padding:0}
+.acct:hover{border-color:var(--night-ink)}
+.acct::after{content:"";position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;border:2px solid var(--night);display:none}
+.acct[data-s="synced"]::after{display:block;background:#8FC79A}
+.acct[data-s="syncing"]::after{display:block;background:#F2D27A}
+.acct[data-s="error"]::after{display:block;background:#E48A80}
+.acct[data-s="signedout"]::after,.acct[data-s="noconfig"]::after{display:block;background:#8E8795}
+.cloud-card{margin-top:18px;padding:18px;border-radius:18px;background:var(--surface);border:1px solid var(--rule)}
+.cloud-card p{margin:0 0 10px}
+.cloud-card code{font-size:13px;background:var(--paper);padding:1px 6px;border-radius:6px}
+.gbtn{display:inline-flex;align-items:center;gap:10px}
+@media (max-width:420px){.brand{letter-spacing:.2em;font-size:15px;margin-right:0}.links button{padding:6px 5px;font-size:13px;letter-spacing:.02em}}
 
 /* ---------- 深色主視覺（美食攝影感） ---------- */
 .hero{background:var(--night);color:var(--night-ink);padding:36px 0 44px}
@@ -270,6 +282,7 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:400;letter-spacing:.04em;margin
       <button data-view="fridge">我的冰箱</button>
       <button data-view="pick">吃什麼</button>
     </div>
+    <button class="acct" id="acctBtn" data-s="noconfig" aria-label="雲端同步">☁</button>
   </div>
 </nav>
 
@@ -279,7 +292,7 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:400;letter-spacing:.04em;margin
     <div class="wrap">
       <div>
         <p class="kicker">the art of one pot</p>
-        <h1>一個人的<br>快煮鍋餐桌</h1>
+        <h1>兩個人的<br>快煮鍋餐桌</h1>
         <p class="lede">每天排一道小鍋料理，食材跟冰箱自動對照，買菜不再多買也不漏買。</p>
         <div class="today-line" id="todayLine"></div>
       </div>
@@ -414,6 +427,22 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:400;letter-spacing:.04em;margin
   </symbol>
 </svg>
 
+<script>
+/* ============================================================
+   Firebase 雲端同步設定
+   把 Firebase 主控台「專案設定 → 你的應用程式」裡的 firebaseConfig
+   六個值貼到下面引號裡。沒填的話網站照常能用，只是不會同步。
+   ============================================================ */
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyD4LgXEsN6SMzAEsnVoLXMeRrmIkyek4Hg",
+  authDomain: "food-c5270.firebaseapp.com",
+  projectId: "food-c5270",
+  storageBucket: "food-c5270.firebasestorage.app",
+  messagingSenderId: "20136901477",
+  appId: "1:20136901477:web:29c6eade0642d4fb01ff8c",
+  measurementId: "G-4XQTZG3SH9"
+};
+</script>
 <script>
 (function(){
 "use strict";
@@ -620,8 +649,118 @@ let state = normalize((function(){ try{ const s=JSON.parse(localStorage.getItem(
 rebuild();
 function isWeekend(key){ const w=parse(key).getDay(); return w===0||w===6; }
 function isOff(key){ return state.settings.weekendOff && isWeekend(key) && !state.cookOn[key]; }
-function persist(){
-  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
+function persist(){ saveLocal(); queuePush(); }
+
+/* ---------- Firebase 雲端同步 ---------- */
+const FB_VER = "10.12.2";
+let fb = null, fbUser = null, cloudRef = null, unsub = null, pushTimer = null, cloud = {s:"noconfig", err:""};
+function hasConfig(){ const c = window.FIREBASE_CONFIG; return !!(c && c.apiKey && c.projectId && c.appId); }
+function setCloud(s, err){ cloud = {s, err:err||""}; const b=document.getElementById("acctBtn"); if(!b) return;
+  b.dataset.s = s;
+  b.textContent = s==="synced"&&fbUser ? ((fbUser.displayName||fbUser.email||"我").trim().charAt(0).toUpperCase()) : "☁";
+  b.setAttribute("aria-label", {noconfig:"雲端同步尚未設定",signedout:"登入以同步",syncing:"同步中",synced:"已同步",error:"同步出錯"}[s]||"雲端同步");
+  if(sheetCtx && sheetCtx.type==="cloud") openCloud();
+}
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("無法載入 "+src)); document.head.appendChild(s); }); }
+// Firestore 不支援「陣列裡的陣列」，所以食材存成 {n,q} 物件
+function encodeState(){
+  const c = JSON.parse(JSON.stringify({plan:state.plan, fridge:state.fridge, settings:state.settings, cookOn:state.cookOn, custom:state.custom}));
+  c.custom = c.custom.map(r=>({...r, ing:r.ing.map(([n,q])=>({n,q})), sea:r.sea.map(([n,q])=>({n,q}))}));
+  return c;
+}
+function decodeState(d){
+  const pairs = a => Array.isArray(a) ? a.map(x=>Array.isArray(x)?x:[String(x.n||""),String(x.q||"")]) : [];
+  const s = {plan:d.plan||{}, fridge:d.fridge||{food:[],season:[]}, settings:d.settings, cookOn:d.cookOn, custom:(d.custom||[]).map(r=>({...r, ing:pairs(r.ing), sea:pairs(r.sea), st:Array.isArray(r.st)?r.st:[]}))};
+  s.fridge.food = s.fridge.food||[]; s.fridge.season = s.fridge.season||[];
+  return normalize(JSON.parse(JSON.stringify(s)));
+}
+function mergeStates(a, b){ // a = 雲端, b = 這台裝置
+  const out = JSON.parse(JSON.stringify(a));
+  Object.entries(b.plan||{}).forEach(([k,ids])=>{ const set=new Set(out.plan[k]||[]); ids.forEach(i=>set.add(i)); out.plan[k]=[...set]; });
+  ["food","season"].forEach(kind=>(b.fridge[kind]||[]).forEach(f=>{ if(!out.fridge[kind].includes(f)) out.fridge[kind].push(f); }));
+  Object.keys(b.cookOn||{}).forEach(k=>{ out.cookOn[k]=true; });
+  const ids = new Set(out.custom.map(r=>r.id)); (b.custom||[]).forEach(r=>{ if(!ids.has(r.id)) out.custom.push(r); });
+  return out;
+}
+function applyState(next){
+  state = next; saveLocal(); rebuild(); renderAll();
+  if(sheetCtx && (sheetCtx.type==="recipe"||sheetCtx.type==="needs")) refreshSheet();
+}
+async function pushNow(){
+  if(!cloudRef) return;
+  setCloud("syncing");
+  try{ await cloudRef.set({...encodeState(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); setCloud("synced"); }
+  catch(e){ console.error(e); setCloud("error", e.code||e.message); }
+}
+function queuePush(){ if(!cloudRef) return; clearTimeout(pushTimer); setCloud("syncing"); pushTimer = setTimeout(pushNow, 600); }
+function startSync(u){
+  cloudRef = fb.db.collection("users").doc(u.uid);
+  const mergedKey = "xiaoguo-merged-" + u.uid;
+  let first = true;
+  setCloud("syncing");
+  unsub = cloudRef.onSnapshot(async snap=>{
+    if(snap.metadata.hasPendingWrites) return;
+    if(first && snap.metadata.fromCache) return; // 等拿到雲端真正的資料再決定，避免離線時蓋掉雲端
+    const data = snap.exists ? snap.data() : null;
+    if(first){
+      first = false;
+      let merged = false; try{ merged = localStorage.getItem(mergedKey)==="1"; }catch(e){}
+      if(!data){ await pushNow(); try{localStorage.setItem(mergedKey,"1");}catch(e){} toast("已把這台裝置的資料存到雲端"); return; }
+      if(!merged){
+        applyState(mergeStates(decodeState(data), state));
+        try{ localStorage.setItem(mergedKey,"1"); }catch(e){}
+        await pushNow(); toast("已和雲端資料合併"); return;
+      }
+    }
+    if(data){ clearTimeout(pushTimer); applyState(decodeState(data)); }
+    setCloud("synced");
+  }, err=>{ console.error(err); setCloud("error", err.code||err.message); });
+}
+async function initFirebase(){
+  if(!hasConfig()){ setCloud("noconfig"); return; }
+  try{
+    const base = `https://www.gstatic.com/firebasejs/${FB_VER}/`;
+    await loadScript(base+"firebase-app-compat.js");
+    await Promise.all([loadScript(base+"firebase-auth-compat.js"), loadScript(base+"firebase-firestore-compat.js")]);
+    firebase.initializeApp(window.FIREBASE_CONFIG);
+    fb = {auth: firebase.auth(), db: firebase.firestore()};
+    setCloud("signedout");
+    fb.auth.getRedirectResult().catch(e=>{ if(e && e.code) setCloud("error", e.code); });
+    fb.auth.onAuthStateChanged(u=>{
+      if(unsub){ unsub(); unsub=null; } cloudRef = null; fbUser = u;
+      if(u) startSync(u); else setCloud("signedout");
+    });
+  }catch(e){ console.error(e); setCloud("error", e.message); }
+}
+async function signIn(){
+  if(!fb) return;
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try{ await fb.auth.signInWithPopup(provider); }
+  catch(e){
+    if(["auth/popup-blocked","auth/operation-not-supported-in-this-environment","auth/cancelled-popup-request"].includes(e.code)){ try{ await fb.auth.signInWithRedirect(provider); }catch(e2){ setCloud("error", e2.code); } }
+    else if(e.code!=="auth/popup-closed-by-user") setCloud("error", e.code||e.message);
+  }
+}
+const ERR_HINT = {
+  "auth/unauthorized-domain":"這個網址還沒加進 Firebase。到 Authentication → 設定 → 授權網域，新增 jennywei111.github.io。",
+  "permission-denied":"Firestore 的安全規則沒設好，請照說明貼上規則並發布。",
+  "auth/operation-not-allowed":"Google 登入還沒開啟。到 Authentication → 登入方式，啟用 Google。",
+  "auth/configuration-not-found":"Authentication 還沒啟用。到 Firebase 主控台的 Authentication 按「開始使用」。",
+  "auth/invalid-api-key":"FIREBASE_CONFIG 的 apiKey 貼錯了，請重新複製。",
+  "failed-precondition":"Firestore 資料庫還沒建立。到 Firestore Database 按「建立資料庫」。",
+  "unavailable":"目前連不上雲端，網路恢復後會自動同步。"
+};
+function openCloud(){
+  const wasOpen = sheetCtx && sheetCtx.type==="cloud";
+  sheetCtx = {type:"cloud"};
+  const s = cloud.s; let body = "";
+  if(s==="noconfig") body = `<div class="cloud-card"><p>雲端同步還沒設定好。</p><p class="sub">要先在 Firebase 建立專案，把設定貼到 <code>index.html</code> 最上方的 <code>FIREBASE_CONFIG</code>。在那之前，資料只存在這台裝置的瀏覽器裡。</p></div>`;
+  else if(s==="signedout") body = `<div class="cloud-card"><p>用 Google 帳號登入後，電腦和手機會自動同步菜單、冰箱和你新增的食譜。</p><p class="sub">第一次登入時，這台裝置上已有的資料會和雲端合併，不會被洗掉。</p><button class="btn solid gbtn" data-signin="1"><b style="font-family:var(--latin);font-size:18px">G</b>用 Google 登入</button></div>`;
+  else if(s==="error") body = `<div class="cloud-card"><p>同步出了點問題。</p><p class="sub">${esc(ERR_HINT[cloud.err]||("錯誤代碼："+cloud.err))}</p><div class="row">${fbUser?`<button class="btn sm" data-signout="1">登出</button>`:`<button class="btn solid sm" data-signin="1">重新登入</button>`}</div></div>`;
+  else body = `<div class="cloud-card"><p>${s==="syncing"?"同步中…":"✓ 已同步"}</p><p class="sub">登入帳號：${esc(fbUser?(fbUser.email||fbUser.displayName||""):"")}<br>在任何裝置用同一個 Google 帳號登入，資料都會自動更新。</p><button class="btn sm" data-signout="1">登出</button></div>`;
+  const html = `<div class="sheet-head"><h3 id="sheetTitle">雲端同步<small>電腦、手機看到同一份資料</small></h3><button class="x" data-close aria-label="關閉">✕</button></div>${body}`;
+  if(wasOpen) $("#sheet").innerHTML = html; else { openSheet("",""); $("#sheet").innerHTML = html; sheetCtx = {type:"cloud"}; }
 }
 
 const $ = s=>document.querySelector(s);
@@ -910,6 +1049,9 @@ function renderAll(){ renderToday(); renderCalendar(); renderDay(); renderFridge
 document.addEventListener("click", e=>{
   const t = e.target.closest("button"); if(!t) return;
   const d = t.dataset;
+  if(t.id==="acctBtn") return openCloud();
+  if(d.signin) return signIn();
+  if(d.signout){ if(fb) fb.auth.signOut(); toast("已登出，資料仍保留在這台裝置"); return; }
   if(d.emo){ document.querySelectorAll(".emos button").forEach(b=>b.setAttribute("aria-pressed", b===t)); $("#fEmo").value=d.emo; return; }
   if(d.newrecipe) return openRecipeForm(null, d.newrecipe==="picker");
   if(d.editrecipe) return openRecipeForm(d.editrecipe);
@@ -951,6 +1093,7 @@ $("#libSearch").addEventListener("input", renderLib);
 $("#libSort").addEventListener("change", renderLib);
 
 renderAll();
+initFirebase();
 })();
 </script>
 </body>
