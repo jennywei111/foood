@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>小鍋日記｜一個人的快煮鍋餐桌</title>
+<meta name="description" content="快煮鍋一人份菜單日曆：排菜、對照冰箱、一鍵列出本週所需食材。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍲</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600&family=Noto+Sans+TC:wght@400;500&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F7F2F3; --surface:#FFFFFF; --ink:#2E2A33; --ink-soft:#77707C; --rule:#E4DADD;
+  --blush:#F1CFCA; --blush-deep:#D98F88; --sage:#C6D6C3; --sage-deep:#6F8D72;
+  --powder:#CCDAE8; --butter:#F2E2B4; --lav:#DCD3E8;
+  --night:#2A2630; --night-ink:#F7F2F3; --night-soft:#BDB3C2;
+  --on-ink:#FFFFFF;
+  --serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --latin:"Cormorant Garamond","Noto Serif TC",serif;
+  --arch:999px 999px 14px 14px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#1E1B22; --surface:#29252E; --ink:#F3EDF0; --ink-soft:#ADA4B1; --rule:#3B3540;
+    --blush:#5A3D40; --blush-deep:#E3A39C; --sage:#34443A; --sage-deep:#9DBC9F;
+    --powder:#33404D; --butter:#4A4230; --lav:#3E3649;
+    --night:#141217; --night-ink:#F3EDF0; --night-soft:#A79EAB; --on-ink:#1E1B22;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#1E1B22; --surface:#29252E; --ink:#F3EDF0; --ink-soft:#ADA4B1; --rule:#3B3540;
+  --blush:#5A3D40; --blush-deep:#E3A39C; --sage:#34443A; --sage-deep:#9DBC9F;
+  --powder:#33404D; --butter:#4A4230; --lav:#3E3649;
+  --night:#141217; --night-ink:#F3EDF0; --night-soft:#A79EAB; --on-ink:#1E1B22;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.75;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--blush-deep);outline-offset:3px}
+.hidden{display:none!important}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:400;letter-spacing:.04em;margin:0}
+
+/* ---------- 頂部導覽 ---------- */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--night);color:var(--night-ink);border-bottom:1px solid rgba(255,255,255,.08)}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px;gap:12px}
+.brand{font-family:var(--serif);font-size:17px;letter-spacing:.55em;white-space:nowrap;margin-right:-.55em;background:none;border:0;padding:0;color:inherit}
+.links{display:flex;gap:4px}
+.links button{background:none;border:0;padding:6px 10px;font-size:14.5px;letter-spacing:.12em;color:var(--night-soft);border-bottom:1px solid transparent;border-radius:0}
+.links button[aria-current="page"]{color:var(--night-ink);border-bottom-color:var(--blush)}
+@media (max-width:420px){.brand{letter-spacing:.3em;font-size:15px;margin-right:0}.links button{padding:6px 7px;font-size:13.5px;letter-spacing:.06em}}
+
+/* ---------- 深色主視覺（美食攝影感） ---------- */
+.hero{background:var(--night);color:var(--night-ink);padding:36px 0 44px}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
+.kicker{font-family:var(--latin);font-style:italic;font-size:19px;color:var(--blush);letter-spacing:.06em;margin:0 0 6px}
+.hero h1{font-size:clamp(34px,6vw,60px);line-height:1.25;letter-spacing:.08em}
+.hero .lede{color:var(--night-soft);margin:14px 0 0;max-width:30em}
+.today-line{margin-top:26px;padding-top:18px;border-top:1px solid rgba(255,255,255,.14);display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.today-line strong{font-family:var(--serif);font-weight:400;font-size:21px;letter-spacing:.06em}
+.today-line span{color:var(--night-soft);font-size:14px}
+.arch-frame{border-radius:var(--arch);overflow:hidden;aspect-ratio:5/6;max-width:360px;width:100%;justify-self:end;background:var(--blush)}
+.arch-frame svg{display:block;width:100%;height:100%}
+@media (max-width:760px){
+  .hero{padding:26px 0 30px}
+  .hero .wrap{grid-template-columns:1fr 120px;gap:18px}
+  .arch-frame{max-width:120px}
+  .hero .lede{font-size:14.5px}
+}
+
+/* ---------- 按鈕 ---------- */
+.btn{border:1px solid var(--ink);background:transparent;color:var(--ink);border-radius:999px;padding:9px 22px;font-size:14.5px;letter-spacing:.08em;transition:background .15s,color .15s}
+.btn:hover{background:var(--ink);color:var(--on-ink)}
+.btn.solid{background:var(--ink);color:var(--on-ink)}
+.btn.solid:hover{opacity:.85}
+.btn.soft{border-color:transparent;background:var(--blush)}
+.btn.soft:hover{background:var(--blush-deep);color:#fff}
+.btn.sm{padding:5px 14px;font-size:13.5px}
+.btn.light{border-color:var(--night-ink);color:var(--night-ink)}
+.btn.light:hover{background:var(--night-ink);color:var(--night)}
+.btn.light.solid{background:var(--blush);border-color:var(--blush);color:#2E2A33}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* ---------- 區塊標題 ---------- */
+.section{padding-top:44px;padding-bottom:8px}
+.shead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--rule);margin-bottom:18px}
+.shead h2{font-size:clamp(24px,3.4vw,32px);line-height:1.3}
+.shead .num{font-family:var(--latin);font-style:italic;font-size:18px;color:var(--ink-soft)}
+.shead p{margin:0;color:var(--ink-soft);font-size:14px}
+
+/* ---------- 首頁兩欄 ---------- */
+.home-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:40px;align-items:start}
+@media (max-width:860px){.home-grid{grid-template-columns:1fr;gap:10px}}
+
+/* 日曆 */
+.cal{background:var(--surface);border-radius:22px;padding:22px 20px 18px;border:1px solid var(--rule)}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-head h3{font-size:22px;letter-spacing:.1em}
+.round{width:38px;height:38px;border-radius:50%;border:1px solid var(--rule);background:transparent;font-size:18px;line-height:1;display:grid;place-items:center;color:var(--ink)}
+.round:hover{border-color:var(--ink)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px 4px}
+.dow{text-align:center;font-size:12.5px;color:var(--ink-soft);letter-spacing:.1em;padding-bottom:6px}
+.day{position:relative;border:0;background:transparent;border-radius:var(--arch);padding:6px 0 4px;display:flex;flex-direction:column;align-items:center;min-width:0;min-height:58px}
+.day .n{font-size:15px;line-height:1.6;width:28px;height:28px;border-radius:50%;display:grid;place-items:center}
+.day .e{font-size:12.5px;line-height:1.2;letter-spacing:-2px;white-space:nowrap;overflow:hidden;max-width:100%;min-height:15px}
+.day.out{opacity:.35}
+.day.wk{background:var(--sage)}
+.day.today .n{background:var(--blush-deep);color:#fff}
+.day.sel{background:var(--ink);color:var(--on-ink)}
+.day.sel.today .n{background:var(--blush);color:#2E2A33}
+.day:hover:not(.sel){background:var(--lav)}
+.day .off{font-size:11px;line-height:1.3;color:var(--ink-soft);letter-spacing:.1em}
+.day.sel .off{color:inherit}
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink)}
+.switch input{appearance:none;-webkit-appearance:none;width:38px;height:22px;border-radius:999px;background:var(--rule);position:relative;margin:0;cursor:pointer;transition:background .15s}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
+.switch input:checked{background:var(--sage-deep)}
+.switch input:checked::after{transform:translateX(16px)}
+.restday{padding:34px 20px 30px;text-align:center;border-radius:220px 220px 18px 18px;background:var(--lav);max-width:420px;margin:0 auto;width:100%}
+.restday h3{font-size:24px;letter-spacing:.12em;margin-top:6px}
+.restday p{margin:6px 0 0;color:var(--ink-soft);font-size:14px}
+.restday .row{justify-content:center;margin-top:16px}
+.note{font-size:13px;color:var(--ink-soft);margin:12px 0 0;text-align:right}
+.note button{background:none;border:0;padding:0;text-decoration:underline;text-underline-offset:3px;color:inherit;font-size:13px}
+.cal-foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-soft)}
+.sw{display:inline-block;width:12px;height:14px;border-radius:6px 6px 2px 2px;background:var(--sage);vertical-align:-2px;margin-right:6px}
+
+/* 食譜卡片 */
+.list{display:flex;flex-direction:column}
+.rcard{display:flex;gap:16px;align-items:center;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--rule);padding:14px 2px}
+.rcard:hover .rname{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:5px}
+.thumb{flex:none;width:58px;height:70px;border-radius:var(--arch);display:grid;place-items:center;font-size:28px}
+.p0{background:var(--blush)}.p1{background:var(--sage)}.p2{background:var(--powder)}.p3{background:var(--butter)}
+.rinfo{min-width:0;flex:1}
+.rname{font-family:var(--serif);font-size:18px;line-height:1.45;letter-spacing:.04em;display:block}
+.rmeta{display:flex;gap:12px;flex-wrap:wrap;margin-top:3px;font-size:13px;color:var(--ink-soft)}
+.tag{font-size:12px;padding:0 10px;border-radius:999px;border:1px solid var(--rule);color:var(--ink-soft);line-height:1.8}
+.tag.ic{border-color:var(--blush-deep);color:var(--blush-deep)}
+.tag.cp{border-color:var(--sage-deep);color:var(--sage-deep)}
+.tag.my{border-color:var(--ink);color:var(--ink)}
+.rform .fl{display:block;margin-top:18px;font-size:14px;color:var(--ink-soft);letter-spacing:.04em}
+.rform .fl b{font-weight:400;color:var(--blush-deep)}
+.rform input,.rform textarea,.rform select{width:100%;border:1px solid var(--rule);border-radius:14px;background:var(--surface);padding:10px 12px;margin-top:6px}
+.rform input:focus,.rform textarea:focus,.rform select:focus{outline:none;border-color:var(--ink)}
+.rform textarea{min-height:112px;resize:vertical;line-height:1.75}
+.rform .three{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:10px}
+.rform .hint{display:block;font-size:12.5px;color:var(--ink-soft);margin-top:4px}
+.emos{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.emos button{width:42px;height:48px;border-radius:21px 21px 8px 8px;border:1px solid var(--rule);background:var(--surface);font-size:21px;padding:0}
+.emos button[aria-pressed="true"]{background:var(--blush);border-color:var(--blush-deep)}
+.form-err{color:var(--blush-deep);font-size:14px;margin:12px 0 0}
+.form-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
+.form-actions .btn{flex:1;padding:12px}
+.mine-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.bar{height:3px;background:var(--rule);border-radius:3px;margin-top:8px;max-width:180px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--sage-deep)}
+.arrow{flex:none;color:var(--ink-soft);font-family:var(--latin);font-size:22px}
+.empty{padding:28px 18px;text-align:center;color:var(--ink-soft);border:1px dashed var(--rule);border-radius:18px}
+.empty .row{justify-content:center;margin-top:12px}
+.day-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.day-actions .btn{padding:12px 10px}
+.day-actions .full{grid-column:1/-1}
+
+/* ---------- 冰箱 ---------- */
+.band{background:var(--sage);padding:40px 0 34px}
+.band.blush{background:var(--blush)}
+.band h1{font-size:clamp(30px,5vw,46px);letter-spacing:.1em}
+.band p{margin:8px 0 0;color:var(--ink-soft);max-width:34em}
+.band .kicker{color:var(--sage-deep)}
+.fr-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:32px 0 10px}
+@media (max-width:760px){.fr-grid{grid-template-columns:1fr}}
+.fr{background:var(--surface);border:1px solid var(--rule);border-radius:22px;padding:24px 20px}
+.fr h2{font-size:24px;display:flex;align-items:baseline;gap:10px}
+.fr h2 small{font-family:var(--sans);font-size:13px;color:var(--ink-soft);letter-spacing:0}
+.adder{display:flex;gap:8px;margin-top:14px}
+.adder input,.search input,.search select{flex:1;min-width:0;border:0;border-bottom:1px solid var(--ink);background:transparent;padding:8px 2px;border-radius:0}
+.adder input:focus,.search input:focus{outline:none;border-bottom-width:2px}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.pill{display:inline-flex;align-items:center;gap:2px;padding:3px 4px 3px 14px;border-radius:999px;background:var(--sage);font-size:14.5px}
+.pill.s{background:var(--butter)}
+.pill button{border:0;background:transparent;width:24px;height:24px;border-radius:50%;font-size:13px;color:var(--ink-soft)}
+.pill button:hover{background:var(--surface)}
+.sug{margin-top:18px;padding-top:14px;border-top:1px solid var(--rule)}
+.sug p{margin:0 0 8px;font-size:13px;color:var(--ink-soft)}
+.sug button{border:1px dashed var(--ink-soft);background:transparent;border-radius:999px;padding:1px 12px;font-size:13.5px;color:var(--ink-soft)}
+.sug button:hover{border-style:solid;color:var(--ink)}
+.cta-line{display:flex;justify-content:center;padding:18px 0 40px}
+
+/* ---------- 吃什麼 ---------- */
+.pick-hero{background:var(--night);color:var(--night-ink);padding:40px 0 44px;text-align:center}
+.pick-hero h1{font-size:clamp(30px,5.5vw,50px);letter-spacing:.1em}
+.pick-hero .lede{color:var(--night-soft);margin:8px auto 22px;max-width:28em}
+.pot-arch{width:200px;height:230px;margin:0 auto;border-radius:var(--arch);background:var(--blush);display:grid;place-items:end center;overflow:hidden;cursor:pointer;border:0;padding:0}
+.pot-arch svg{width:100%;height:100%}
+.pot-arch.shake svg{animation:shake .7s ease-in-out}
+@keyframes shake{0%,100%{transform:rotate(0)}15%{transform:rotate(-6deg)}30%{transform:rotate(5deg)}45%{transform:rotate(-4deg)}60%{transform:rotate(3deg)}80%{transform:rotate(-1deg)}}
+.filters{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:24px auto 10px;max-width:560px}
+.f{border:1px solid rgba(255,255,255,.35);background:transparent;color:var(--night-ink);border-radius:999px;padding:3px 14px;font-size:14px;letter-spacing:.08em}
+.f[aria-pressed="true"]{background:var(--night-ink);color:var(--night);border-color:var(--night-ink)}
+.toggles{display:flex;flex-wrap:wrap;justify-content:center;gap:18px;font-size:14px;color:var(--night-soft);margin-bottom:20px}
+.toggles label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.toggles input{width:16px;height:16px;accent-color:var(--blush-deep)}
+.result{max-width:520px;margin:26px auto 0;text-align:left;background:var(--paper);color:var(--ink);border-radius:22px;padding:18px 20px;animation:rise .35s ease-out}
+@keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+.result .row{margin-top:14px}
+.search{display:flex;gap:16px;margin-bottom:6px}
+.search select{flex:none;width:auto;padding-right:6px}
+.credit{font-size:13px;color:var(--ink-soft);text-align:center;margin:30px auto 40px;max-width:36em;line-height:1.8}
+
+/* ---------- 詳細面板 ---------- */
+.overlay{position:fixed;inset:0;background:rgba(30,26,34,.5);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--paper);width:100%;max-width:640px;max-height:90%;overflow:auto;border-radius:26px 26px 0 0;padding:0 22px calc(26px + env(safe-area-inset-bottom,0px));animation:up .25s ease-out}
+@keyframes up{from{transform:translateY(30px);opacity:.5}to{transform:none;opacity:1}}
+@media (min-width:760px){.overlay{align-items:center}.sheet{border-radius:26px;max-height:86%}}
+.sheet-head{position:sticky;top:0;background:var(--paper);display:flex;align-items:flex-start;gap:12px;padding:20px 0 14px;border-bottom:1px solid var(--rule);z-index:1}
+.sheet-head h3{flex:1;font-size:25px;line-height:1.4}
+.sheet-head h3 small{display:block;font-family:var(--sans);font-size:13.5px;color:var(--ink-soft);letter-spacing:0;margin-top:2px}
+.x{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--rule);background:transparent;font-size:15px}
+.x:hover{border-color:var(--ink)}
+.dh{display:flex;gap:16px;align-items:center;margin:18px 0 6px}
+.dh .thumb{width:74px;height:90px;font-size:36px}
+.sub{font-size:14px;color:var(--ink-soft);margin:0}
+.block{margin-top:24px}
+.block h4{font-size:18px;letter-spacing:.1em;margin-bottom:6px}
+.il{list-style:none;margin:0;padding:0}
+.il li{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule)}
+.il .nm{flex:1;min-width:0}
+.il .nm small{display:block;color:var(--ink-soft);font-size:12.5px;line-height:1.55}
+.qty{color:var(--ink-soft);font-size:14px;white-space:nowrap}
+.have,.miss{font-size:12px;padding:0 10px;border-radius:999px;white-space:nowrap;line-height:1.9}
+.have{background:var(--sage)}
+.miss{background:var(--blush)}
+.buy{border:1px solid var(--ink);background:transparent;border-radius:999px;font-size:12.5px;padding:0 11px;line-height:1.9;white-space:nowrap}
+.buy:hover{background:var(--ink);color:var(--on-ink)}
+.steps{list-style:none;margin:0;padding:0;counter-reset:s}
+.steps li{counter-increment:s;display:grid;grid-template-columns:40px 1fr;gap:6px;padding:10px 0;border-bottom:1px solid var(--rule)}
+.steps li::before{content:counter(s,decimal-leading-zero);font-family:var(--latin);font-style:italic;font-size:22px;line-height:1.3;color:var(--blush-deep)}
+.tipbox{margin-top:14px;background:var(--butter);border-radius:16px;padding:12px 16px;font-size:15px}
+.addrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:24px;padding:16px;border-radius:18px;background:var(--surface);border:1px solid var(--rule)}
+.addrow input{border:0;border-bottom:1px solid var(--ink);background:transparent;padding:4px 2px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
+.stats div{border-radius:16px 16px 10px 10px;padding:12px 8px 10px;text-align:center}
+.stats div:nth-child(1){background:var(--powder)}.stats div:nth-child(2){background:var(--blush)}.stats div:nth-child(3){background:var(--butter)}
+.stats strong{display:block;font-family:var(--latin);font-size:34px;font-weight:500;line-height:1}
+.stats span{font-size:12.5px;color:var(--ink-soft)}
+.toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--on-ink);padding:9px 20px;border-radius:999px;z-index:70;font-size:14.5px;letter-spacing:.04em;animation:rise .2s ease-out;max-width:90%;text-align:center}
+
+/* 插畫小動畫 */
+.steam path{animation:steam 3s ease-in-out infinite}
+.steam path:nth-child(2){animation-delay:.6s}.steam path:nth-child(3){animation-delay:1.2s}
+@keyframes steam{0%,100%{opacity:.2;transform:translateY(4px)}50%{opacity:.85;transform:translateY(-4px)}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<nav class="nav" aria-label="主選單">
+  <div class="wrap">
+    <button class="brand" data-view="home">小鍋日記</button>
+    <div class="links">
+      <button data-view="home" aria-current="page">菜單日曆</button>
+      <button data-view="fridge">我的冰箱</button>
+      <button data-view="pick">吃什麼</button>
+    </div>
+  </div>
+</nav>
+
+<!-- 首頁 -->
+<main id="view-home">
+  <header class="hero">
+    <div class="wrap">
+      <div>
+        <p class="kicker">the art of one pot</p>
+        <h1>一個人的<br>快煮鍋餐桌</h1>
+        <p class="lede">每天排一道小鍋料理，食材跟冰箱自動對照，買菜不再多買也不漏買。</p>
+        <div class="today-line" id="todayLine"></div>
+      </div>
+      <div class="arch-frame" aria-hidden="true"><svg viewBox="0 0 300 360"><use href="#stillLife"/></svg></div>
+    </div>
+  </header>
+
+  <div class="wrap section">
+    <div class="home-grid">
+      <section>
+        <div class="shead"><h2>菜單日曆</h2><span class="num" id="monthLatin"></span></div>
+        <div class="cal">
+          <div class="cal-head">
+            <button class="round" id="prevM" aria-label="上個月">‹</button>
+            <h3 id="monthTitle"></h3>
+            <button class="round" id="nextM" aria-label="下個月">›</button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="cal-foot"><label class="switch"><input type="checkbox" id="weekendOff">週末自動休假</label><button class="btn sm" id="goToday">回到今天</button></div>
+        </div>
+      </section>
+      <section>
+        <div class="shead"><h2 id="dayTitle">今日食譜</h2><p id="dayCount"></p></div>
+        <div class="list" id="menuList"></div>
+        <div class="day-actions">
+          <button class="btn solid" id="btnDayNeeds">今日所需食材</button>
+          <button class="btn" id="btnWeekNeeds">本週所需食材</button>
+          <button class="btn soft full" id="btnAddDish">＋ 幫這天加一道菜</button>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div style="height:48px"></div>
+</main>
+
+<!-- 冰箱 -->
+<main id="view-fridge" class="hidden">
+  <header class="band">
+    <div class="wrap">
+      <p class="kicker">in the fridge</p>
+      <h1>我的冰箱</h1>
+      <p>記下家裡現有的食材與調味料，排菜時就知道缺什麼。</p>
+    </div>
+  </header>
+  <div class="wrap">
+    <div class="fr-grid">
+      <section class="fr">
+        <h2>食材<small>肉、菜、蛋、麵、飯</small></h2>
+        <form class="adder" data-kind="food"><input placeholder="輸入食材，例如雞腿、高麗菜" aria-label="新增食材"><button class="btn solid sm" type="submit">放進冰箱</button></form>
+        <div class="pills" id="foodPills"></div>
+        <div class="sug" id="foodSug"></div>
+      </section>
+      <section class="fr">
+        <h2>調味料<small>醬油、鹽、各種醬</small></h2>
+        <form class="adder" data-kind="season"><input placeholder="輸入調味料，例如蠔油、味醂" aria-label="新增調味料"><button class="btn solid sm" type="submit">放進冰箱</button></form>
+        <div class="pills" id="seasonPills"></div>
+        <div class="sug" id="seasonSug"></div>
+      </section>
+    </div>
+    <div class="cta-line"><button class="btn soft" id="btnCookFridge">看看冰箱現在能煮什麼</button></div>
+  </div>
+</main>
+
+<!-- 吃什麼 -->
+<main id="view-pick" class="hidden">
+  <header class="pick-hero">
+    <div class="wrap">
+      <p class="kicker">what's for dinner</p>
+      <h1>不知道要吃什麼？</h1>
+      <p class="lede">輕點小鍋，從愛料理與 Cookpad 的快煮鍋食譜裡抽一道給你。</p>
+      <button class="pot-arch" id="gachaPot" aria-label="搖一搖抽食譜"><svg viewBox="0 0 300 360" aria-hidden="true"><use href="#potOnly"/></svg></button>
+      <div class="filters" id="catFilters"></div>
+      <div class="toggles">
+        <label><input type="checkbox" id="fQuick">20 分鐘內</label>
+        <label><input type="checkbox" id="fFridge">優先用冰箱有的</label>
+      </div>
+      <button class="btn light solid" id="btnGacha">搖一搖小鍋</button>
+      <div id="gachaResult"></div>
+    </div>
+  </header>
+  <div class="wrap section">
+    <div class="shead"><h2>全部快煮鍋食譜</h2><div class="row"><span class="num" id="libCount"></span><button class="btn solid sm" data-newrecipe="1">＋ 新增食譜</button></div></div>
+    <div class="search">
+      <input id="libSearch" type="search" placeholder="搜尋菜名或食材" aria-label="搜尋食譜">
+      <select id="libSort" aria-label="排序"><option value="fridge">冰箱最合</option><option value="time">最快完成</option><option value="src">依來源</option></select>
+    </div>
+    <div class="list" id="libList"></div>
+    <p class="credit">食譜整理自 <a href="https://icook.tw/search/%E5%BF%AB%E7%85%AE%E9%8D%8B/" target="_blank" rel="noopener">愛料理</a> 與 <a href="https://cookpad.com/tw/%E6%90%9C%E5%B0%8B/%E5%BF%AB%E7%85%AE%E9%8D%8B" target="_blank" rel="noopener">Cookpad</a> 的快煮鍋分類。份量為一人份參考、步驟為重點整理，完整做法請看原作者食譜。</p>
+  </div>
+</main>
+
+<div id="overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><div class="sheet" id="sheet"></div></div>
+
+<!-- 插畫：粉彩靜物（快煮鍋、湯碗、筷子） -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6DCD7"/><stop offset="1" stop-color="#EFC6C0"/></linearGradient>
+  </defs>
+  <symbol id="potShape" viewBox="0 0 300 360">
+    <g class="steam" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round">
+      <path d="M112 96c-10-12 10-20 0-34"/><path d="M142 88c-10-12 10-20 0-34"/><path d="M172 96c-10-12 10-20 0-34"/>
+    </g>
+    <rect x="132" y="112" width="20" height="12" rx="6" fill="#E9CF8E"/>
+    <path d="M76 140c0-14 30-20 66-20s66 6 66 20z" fill="#F2E2B4"/>
+    <rect x="52" y="158" width="20" height="16" rx="8" fill="#9DB7CF"/>
+    <rect x="212" y="158" width="20" height="16" rx="8" fill="#9DB7CF"/>
+    <path d="M70 144h144v66c0 24-20 40-44 40h-56c-24 0-44-16-44-40z" fill="#CCDAE8"/>
+    <path d="M70 144h144v14H70z" fill="#B7CADD"/>
+    <rect x="124" y="214" width="36" height="10" rx="5" fill="#FFFFFF" opacity=".75"/>
+    <circle cx="186" cy="219" r="4" fill="#D98F88"/>
+    <rect x="96" y="248" width="16" height="12" rx="4" fill="#8FA7BE"/><rect x="172" y="248" width="16" height="12" rx="4" fill="#8FA7BE"/>
+  </symbol>
+  <symbol id="stillLife" viewBox="0 0 300 360">
+    <rect width="300" height="360" fill="url(#wall)"/>
+    <rect y="262" width="300" height="98" fill="#C6D6C3"/>
+    <rect y="262" width="300" height="4" fill="#B3C7B0"/>
+    <path d="M232 36c26 10 34 40 20 62-12-18-30-26-20-62z" fill="#B3C7B0"/>
+    <path d="M250 52c-4 22-8 34-18 46" stroke="#8FAA8C" stroke-width="3" fill="none"/>
+    <use href="#potShape" x="-30" y="12" width="300" height="360"/>
+    <ellipse cx="236" cy="300" rx="44" ry="8" fill="#AFC3AC"/>
+    <path d="M194 270h84c0 26-18 36-42 36s-42-10-42-36z" fill="#FFFFFF"/>
+    <path d="M200 270c10-10 26-12 36-6 10-8 28-6 36 6z" fill="#F2E2B4"/>
+    <circle cx="224" cy="264" r="9" fill="#FFFFFF"/><circle cx="224" cy="264" r="4.5" fill="#F0B64E"/>
+    <rect x="214" y="242" width="80" height="5" rx="2.5" fill="#8C6E5A" transform="rotate(-24 254 244)"/>
+    <rect x="218" y="250" width="80" height="5" rx="2.5" fill="#A0826C" transform="rotate(-20 258 252)"/>
+    <ellipse cx="40" cy="318" rx="22" ry="6" fill="#AFC3AC"/>
+    <circle cx="36" cy="300" r="16" fill="#E7A39B"/><path d="M36 284c2-6 6-8 10-8" stroke="#6F8D72" stroke-width="3" fill="none"/>
+  </symbol>
+  <symbol id="potOnly" viewBox="0 0 300 360">
+    <rect y="286" width="300" height="74" fill="#C6D6C3"/>
+    <use href="#potShape" x="8" y="40" width="300" height="360"/>
+  </symbol>
+</svg>
+
+<script>
+(function(){
+"use strict";
+const CP = "https://cookpad.com/tw/%E9%A3%9F%E8%AD%9C/";
+const IC = "https://icook.tw/recipes/";
+const RECIPES = [
+ {id:"cp01",n:"親子丼",o:"[快煮鍋]親子丼",s:"cp",u:CP+"16521954",a:"哇沙米",t:25,sv:"1人份",c:"飯",e:"🍳",
+  ing:[["去骨雞腿肉","1塊"],["雞蛋","2顆"],["洋蔥","1/4顆"],["香菇","2朵"],["蔥","1支"],["白飯","1碗"]],
+  sea:[["醬油","1大匙"],["味醂","1大匙"],["米酒","半大匙"],["橄欖油","少許"],["鹽","少許"]],
+  st:["雞肉切條抹一點鹽，前一晚放冷藏更入味。","蔥剪成蔥花，香菇與洋蔥剪小塊，蛋打散備用。","鍋裡放少許油，先把洋蔥和香菇炒香。","放雞肉炒到半熟，倒入醬油、味醂、米酒，蓋上鍋蓋煮到肉變白。","蛋液分兩次倒入，第二次不要攪動；蛋半熟就關電源，用餘溫燜一下。","連同湯汁鋪到白飯上，撒蔥花。"],
+  tip:"快煮鍋火力難微調，關電源後用餘溫燜，蛋才會滑嫩。"},
+ {id:"cp02",n:"馬鈴薯燉肉",o:"[快煮鍋]馬鈴薯燉肉",s:"cp",u:CP+"16536875",a:"哇沙米",t:40,sv:"1人份",c:"燉煮",e:"🥔",
+  ing:[["豬肉片","100g"],["馬鈴薯","1顆"],["紅蘿蔔","1/3根"],["洋蔥","1/4顆"]],
+  sea:[["醬油","1.5大匙"],["味醂","1大匙"],["米酒","1大匙"],["糖","1小匙"],["油","少許"]],
+  st:["馬鈴薯、紅蘿蔔切塊，洋蔥切絲。","鍋裡放少許油，炒香洋蔥和肉片。","加入根莖類、調味料，再加水淹過食材。","蓋鍋煮約 20–25 分鐘，筷子能戳穿馬鈴薯就好。"],
+  tip:"最後幾分鐘打開鍋蓋收汁，味道更濃。"},
+ {id:"cp03",n:"10 分鐘壽喜燒",o:"[快煮鍋] 10分鐘壽喜燒醬隨便煮",s:"cp",u:CP+"25648353",a:"宿舍小鍋董",t:10,sv:"1人份",c:"湯鍋",e:"🥩",
+  ing:[["火鍋肉片","1盒"],["洋蔥","1/4顆"],["金針菇","半包"],["板豆腐","半盒"],["雞蛋","1顆"],["蔥","1支"]],
+  sea:[["壽喜燒醬","3大匙"],["水","100ml"]],
+  st:["洋蔥切絲、豆腐切塊、蔥切段。","壽喜燒醬加水倒進鍋裡煮滾。","依序放洋蔥、豆腐、金針菇，最後把肉片涮熟。","想吃的話打一顆蛋進去燜到半熟。"],
+  tip:"用市售壽喜燒醬最省事，怕鹹就多加一點水。"},
+ {id:"cp04",n:"辣炒豬肉娃娃菜",o:"[快煮鍋] 辣炒豬肉娃娃菜",s:"cp",u:CP+"26413179",a:"宿舍小鍋董",t:30,sv:"2人份",c:"快炒",e:"🌶️",
+  ing:[["豬肉片","150g"],["娃娃菜","1包"],["蒜頭","3瓣"],["辣椒","1根"]],
+  sea:[["醬油","1大匙"],["蠔油","1大匙"],["油","1大匙"],["糖","少許"]],
+  st:["娃娃菜切段，蒜頭、辣椒切末。","鍋熱後放油，爆香蒜末和辣椒。","下肉片炒到變色，再放娃娃菜。","加醬油、蠔油、糖拌炒，菜軟了就完成。"],
+  tip:"快煮鍋鍋面小，菜分兩次下比較好翻炒。"},
+ {id:"cp05",n:"番茄蝦仁湯麵",o:"[快煮鍋] 番茄蝦仁彩虹麵",s:"cp",u:CP+"26573388",a:"宿舍小鍋董",t:60,sv:"1人份",c:"麵",e:"🍅",
+  ing:[["蝦仁","8隻"],["牛番茄","1顆"],["麵條","1份"],["洋蔥","1/4顆"],["青菜","1把"]],
+  sea:[["番茄醬","1大匙"],["鹽","少許"],["油","少許"]],
+  st:["番茄切塊、洋蔥切丁。","少許油炒洋蔥和番茄，炒到出湯汁。","加水煮滾後下麵條。","麵快熟時放蝦仁和青菜，用番茄醬、鹽調味。"],
+  tip:"番茄先炒軟再加水，湯才會酸甜夠味。"},
+ {id:"cp06",n:"泡菜甜椒豬肉卷",o:"[快煮鍋] 泡菜甜椒豬肉卷",s:"cp",u:CP+"26532404",a:"宿舍小鍋董",t:30,sv:"1人份",c:"快炒",e:"🫑",
+  ing:[["豬五花肉片","1盒"],["甜椒","1顆"],["韓式泡菜","適量"]],
+  sea:[["油","少許"],["醬油","少許"]],
+  st:["甜椒切條。","肉片攤平，放上甜椒和泡菜捲起來。","鍋內抹少許油，收口朝下先煎到上色。","翻面煎熟，淋點泡菜汁或醬油收汁。"],
+  tip:"收口朝下先煎，肉卷就不會散開。"},
+ {id:"cp07",n:"魚卵卷味噌湯麵",o:"【快煮鍋】月底吃土可以考慮一下的魚卵卷味噌湯麵",s:"cp",u:CP+"25469558",a:"i珍食超人",t:20,sv:"1人份",c:"麵",e:"🍥",
+  ing:[["味噌快煮麵","1包"],["小白菜","1把"],["魚卵卷","1盒"]],
+  sea:[["水","400ml"]],
+  st:["小白菜洗淨切段，魚卵卷切片。","水煮滾後放入魚卵卷。","下麵條和調味包，最後放小白菜燙熟。"],
+  tip:"月底省錢菜，超市特價食材就能搞定。"},
+ {id:"cp08",n:"豚骨拉麵",o:"【快煮鍋】一鍋我覺得很神聖的豚骨拉麵",s:"cp",u:CP+"25437210",a:"i珍食超人",t:20,sv:"1人份",c:"麵",e:"🍜",
+  ing:[["豚骨湯麵","1包"],["豬五花肉片","1盒"],["小白菜","1把"],["金針菇","1包"],["雞蛋","1顆"]],
+  sea:[["水","450ml"]],
+  st:["雞蛋先煮成水煮蛋；金針菇去根剝散，小白菜切段。","水滾先涮肉片，撈起備用。","同一鍋放麵條、湯包和金針菇。","麵熟後放小白菜，鋪上肉片和對半切的蛋。"],
+  tip:"水煮蛋可以前一天先用快煮鍋煮好。"},
+ {id:"cp09",n:"海鮮湯麵",o:"海鮮湯麵快煮鍋料理",s:"cp",u:CP+"25057264",a:"宋品臻",t:30,sv:"1人份",c:"麵",e:"🦐",
+  ing:[["麵條","1份"],["蝦子","5隻"],["花枝丸","3顆"],["青菜","2把"]],
+  sea:[["鰹魚醬油","1.5大匙"],["干貝醬","1大匙"],["白胡椒粉","少許"],["水","約400ml"]],
+  st:["水煮滾，先放花枝丸煮到浮起。","放麵條和蝦子。","加鰹魚醬油、干貝醬調味。","放青菜燙熟，起鍋前撒白胡椒粉。"],
+  tip:"干貝醬是提鮮關鍵，沒有也可以用一點蠔油代替。"},
+ {id:"cp10",n:"絲瓜魚片湯",o:"絲瓜魚片湯（快煮鍋方式）",s:"cp",u:CP+"24272655",a:"胡慧瑩",t:30,sv:"1–2人份",c:"湯鍋",e:"🐟",
+  ing:[["絲瓜","1條"],["魚片","150g"],["薑","3片"]],
+  sea:[["鹽","少許"],["米酒","1小匙"],["油","少許"]],
+  st:["絲瓜去皮切塊，薑切絲。","少許油炒香薑絲，放絲瓜炒軟。","加水煮滾後放魚片。","魚片熟了用鹽、米酒調味。"],
+  tip:"魚片最後放，煮太久容易碎。"},
+ {id:"cp11",n:"德腸玉米濃湯粥",o:"德腸玉米濃湯粥（快煮鍋料理",s:"cp",u:CP+"24191404",a:"蘇蘇",t:20,sv:"1人份",c:"飯",e:"🌭",
+  ing:[["德式香腸","1根"],["白飯","1碗"],["玉米濃湯粉","1包"],["玉米粒","2大匙"],["雞蛋","1顆"]],
+  sea:[["黑胡椒","少許"],["水","350ml"]],
+  st:["香腸切片。","水和白飯放進鍋裡煮滾，邊煮邊攪。","加濃湯粉、玉米粒、香腸再煮 3 分鐘。","關電源前淋上蛋液，撒黑胡椒。"],
+  tip:"濃湯粉很容易黏鍋底，記得一直攪拌。"},
+ {id:"cp12",n:"清冰箱煨麵",o:"小資快煮鍋：清冰箱煨麵",s:"cp",u:CP+"17025891",a:"hcook",t:15,sv:"1人份",c:"麵",e:"🥬",
+  ing:[["麵條","1份"],["高麗菜","2片"],["豬肉絲","50g"],["紅蘿蔔","少許"],["雞蛋","1顆"]],
+  sea:[["醬油","1大匙"],["鹽","少許"],["香油","少許"],["油","少許"]],
+  st:["蔬菜切絲。","少許油炒香肉絲和紅蘿蔔。","加水煮滾，放麵條和高麗菜，煨到湯汁微稠。","打入蛋，用醬油、鹽調味，淋香油。"],
+  tip:"冰箱剩什麼就丟什麼，最適合清冰箱。"},
+ {id:"cp13",n:"培根洋蔥炒馬鈴薯",o:"小資快煮鍋：炒培根洋蔥馬鈴薯",s:"cp",u:CP+"17021741",a:"hcook",t:15,sv:"1人份",c:"快炒",e:"🥓",
+  ing:[["培根","3片"],["洋蔥","1/2顆"],["馬鈴薯","1顆"]],
+  sea:[["鹽","少許"],["黑胡椒","少許"]],
+  st:["馬鈴薯切薄片，先用水煮 5 分鐘撈起。","倒掉水，不放油直接煎培根逼出油。","下洋蔥炒軟，再放馬鈴薯拌炒到微焦。","用鹽和黑胡椒調味。"],
+  tip:"培根本身就鹹，鹽少放一點。"},
+ {id:"cp14",n:"懶人梅花肉燉菜",o:"小資快煮鍋：懶人燉菜feat.梅花肉",s:"cp",u:CP+"17020219",a:"hcook",t:20,sv:"1人份",c:"燉煮",e:"🍲",
+  ing:[["梅花肉片","150g"],["高麗菜","1/4顆"],["紅蘿蔔","1/3根"],["鴻喜菇","半包"]],
+  sea:[["醬油","1大匙"],["米酒","1大匙"],["鹽","少許"]],
+  st:["肉片用醬油、米酒抓醃 10 分鐘。","蔬菜切塊鋪在鍋底，肉片放最上層。","加一點水，蓋鍋燜煮約 12 分鐘。","開蓋拌勻，用鹽調味。"],
+  tip:"蔬菜墊底可以防黏鍋，肉的湯汁也會流進菜裡。"},
+ {id:"cp15",n:"苦茶油拌麵",o:"小資快煮鍋：苦茶油拌麵",s:"cp",u:CP+"17046289",a:"hcook",t:10,sv:"1人份",c:"麵",e:"🍝",
+  ing:[["麵線","1份"],["青菜","1把"],["蔥","1支"]],
+  sea:[["苦茶油","1大匙"],["醬油","1大匙"],["糖","少許"]],
+  st:["醬油、苦茶油、糖先在碗裡拌勻。","水滾下麵，最後一分鐘放青菜。","撈起麵和青菜放進碗裡拌開，撒蔥花。"],
+  tip:"拌的時候加一小匙煮麵水會更滑順。"},
+ {id:"cp16",n:"快煮鍋煮白飯",o:"白飯 - 快煮鍋的白米煮法",s:"cp",u:CP+"17150038",a:"河邊草",t:30,sv:"1–2人份",c:"飯",e:"🍚",
+  ing:[["白米","1杯"]],
+  sea:[["水","1.2杯"]],
+  st:["米洗淨，泡水 20 分鐘。","米和水放進快煮鍋，開電源煮滾。","滾了就關電源（或切保溫），蓋著燜約 15 分鐘。","開蓋翻鬆就完成。"],
+  tip:"煮滾後千萬別掀蓋，燜的步驟最關鍵。"},
+ {id:"cp17",n:"蒜味雙腸飯",o:"蒜味雙腸飯 - 快煮鍋煮法",s:"cp",u:CP+"17155395",a:"河邊草",t:45,sv:"2人份",c:"飯",e:"🧄",
+  ing:[["白米","1.5杯"],["香腸","1條"],["臘腸","1條"],["蒜頭","4瓣"],["蔥","1支"]],
+  sea:[["醬油","1大匙"],["水","1.8杯"]],
+  st:["米洗淨泡水；香腸、臘腸切丁，蒜切片。","鍋內不放油，先煎雙腸和蒜片炒出香氣。","放入米、水和醬油拌勻煮滾。","關電源燜 15–20 分鐘，撒蔥花拌開。"]},
+ {id:"cp18",n:"黑米紅豆湯",o:"黑米紅豆湯 / 快煮鍋30分鐘",s:"cp",u:CP+"16686344",a:"Amy's Kitchen",t:30,sv:"2人份",c:"甜品",e:"🫘",
+  ing:[["紅豆","半杯"],["黑米","2大匙"]],
+  sea:[["黑糖","2大匙"],["水","800ml"]],
+  st:["紅豆和黑米洗淨，泡水一晚。","連水放進鍋裡煮滾，關電源燜 20 分鐘。","再煮滾一次、再燜，直到豆子軟爛。","加黑糖拌勻。"],
+  tip:"煮滾再燜，比一直開著煮省電又不溢鍋。"},
+ {id:"cp19",n:"泡菜起司蛋餅",o:"《快煮鍋料理》泡菜起司蛋餅",s:"cp",u:CP+"16490580",a:"想嫁出去的小廚娘",t:10,sv:"1人份",c:"輕食",e:"🧀",
+  ing:[["蛋餅皮","1片"],["雞蛋","1顆"],["韓式泡菜","2大匙"],["起司片","1片"]],
+  sea:[["油","少許"]],
+  st:["蛋打散。","鍋內抹油倒入蛋液，趁半熟蓋上蛋餅皮。","翻面，鋪上泡菜和起司。","捲起來，兩面煎到金黃。"]},
+ {id:"cp20",n:"豬里肌咖哩飯",o:"豬里肌咖哩飯(快煮鍋)",s:"cp",u:CP+"14099332",a:"不敢用瓦斯爐的快煮鍋&電煎鍋",t:60,sv:"4–5人份（可分裝便當）",c:"飯",e:"🍛",
+  ing:[["豬里肌肉","1盒"],["馬鈴薯","2顆"],["紅蘿蔔","1條"],["花椰菜","1顆"],["雞蛋","4顆"],["白米","2杯"]],
+  sea:[["咖哩塊（甜味）","3小塊"],["咖哩塊（中辣）","2小塊"]],
+  st:["馬鈴薯、紅蘿蔔切塊，先煮 15 分鐘讓它變軟。","里肌切塊，先汆燙去掉浮沫。","全部放進鍋裡加水淹過，滾了放咖哩塊攪到濃稠。","另外燙花椰菜、煮水煮蛋，配白飯裝盒。"],
+  tip:"甜味和中辣咖哩混著用，辣度剛剛好。"},
+
+ {id:"ic01",n:"簡易快煮鍋燒麵",o:"簡易快煮鍋燒麵",s:"ic",u:IC+"487479",a:"Jalin 軒軒的美味料理",t:15,sv:"1人份",c:"麵",e:"🍥",
+  ing:[["鍋燒麵","1包"],["高麗菜","2片"],["火鍋料","5顆"],["火鍋豬肉片","5片"]],
+  sea:[["高湯","400ml"],["日式鰹魚露","1大匙"],["鹽","少許"]],
+  st:["高麗菜切片。","高湯煮滾，放火鍋料和高麗菜。","放鍋燒麵煮開，最後涮肉片。","用鰹魚露和鹽調味。"],
+  tip:"冰箱裡的剩菜都可以一起丟進去。"},
+ {id:"ic02",n:"沙茶燉雞",o:"好簡單「沙茶燉雞」這也太下飯了吧！！",s:"ic",u:IC+"490385",a:"Popo小日子",t:20,sv:"1–2人份",c:"燉煮",e:"🍗",
+  ing:[["雞腿肉","1隻份"],["蒜頭","5瓣"]],
+  sea:[["沙茶醬","1.5大匙"],["醬油","1大匙"],["蠔油","1大匙"],["砂糖","1小匙"],["鹽","少許"],["水","150ml"]],
+  st:["雞肉切塊。","雞皮朝下煎出油，放蒜粒炒香。","加沙茶醬、醬油、蠔油、糖和水拌勻。","蓋鍋燉約 12 分鐘，開蓋收汁。"],
+  tip:"超下飯，記得白飯多煮一點。"},
+ {id:"ic03",n:"蘑菇奶油燉雞",o:"好上手「蘑菇奶油燉雞」濃郁奶香、好好吃！",s:"ic",u:IC+"491762",a:"Popo小日子",t:20,sv:"1人份",c:"燉煮",e:"🍄",
+  ing:[["雞腿排","1片"],["蘑菇","6朵"],["鮮奶油","100ml"]],
+  sea:[["奶油","10g"],["鹽","少許"],["黑胡椒","少許"],["水","50ml"]],
+  st:["雞腿排切塊，蘑菇切片。","奶油融化後，把雞肉煎到上色。","放蘑菇炒軟，加水和鮮奶油。","小火燉到醬汁變濃稠，用鹽、黑胡椒調味。"],
+  tip:"醬汁拿來沾麵包也很好吃。"},
+ {id:"ic04",n:"奶香燉雞（無奶油版）",o:"奶香燉雞 （簡單/無奶油）",s:"ic",u:IC+"482715",a:"RosaJake",t:30,sv:"1人份",c:"燉煮",e:"🥛",
+  ing:[["雞腿排","1片"],["蘑菇","5朵"],["洋蔥","1/4顆"],["蒜頭","2瓣"],["牛奶","150ml"]],
+  sea:[["鹽","少許"],["黑胡椒","少許"],["白酒","1大匙（可省）"]],
+  st:["洋蔥切丁、蒜切末、蘑菇切片。","雞腿排煎到兩面金黃，取出切塊。","同一鍋炒香洋蔥、蒜和蘑菇，放回雞肉。","倒牛奶小火煮 10 分鐘，調味。"],
+  tip:"牛奶不要大滾，才不會油水分離。"},
+ {id:"ic05",n:"香蔥雞煨麵",o:"香蔥雞煨麵（20分鐘一鍋到底）",s:"ic",u:IC+"493881",a:"角落媽媽的家常餐桌",t:20,sv:"1人份",c:"麵",e:"🧅",
+  ing:[["無骨雞腿排","1片"],["麵條","1份"],["蔥","3支"],["薑","3片"]],
+  sea:[["醬油","1.5大匙"],["紹興酒","1大匙"],["白胡椒粉","少許"]],
+  st:["雞腿切塊，蔥分成蔥白、蔥綠切段，薑切片。","雞皮朝下煎出油，放薑片和蔥白爆香。","加醬油、紹興酒和水煮滾，放麵條煨煮。","起鍋前放蔥綠，撒白胡椒。"]},
+ {id:"ic06",n:"蝦米蔥開煨麵",o:"蝦米蔥開煨麵（千羽拉麵）",s:"ic",u:IC+"490480",a:"黃聖文",t:20,sv:"1人份",c:"麵",e:"🦐",
+  ing:[["拉麵","1份"],["蝦米","1大匙"],["蔥","2支"]],
+  sea:[["香菇素蠔油","1大匙"],["醬油","1小匙"],["雞高湯塊","1塊"],["白胡椒粉","少許"],["油","少許"],["水","400ml"]],
+  st:["蝦米泡軟，蔥切段。","少許油炒香蝦米和蔥白。","加水、高湯塊煮滾，放麵條煨煮。","用蠔油、醬油調味，最後放蔥綠。"],
+  tip:"適合下班後不想備料的晚上。"},
+ {id:"ic07",n:"韓式辣奶油燉雞",o:"韓式辣奶油燉雞",s:"ic",u:IC+"493315",a:"ijustcookit",t:60,sv:"1–2人份",c:"燉煮",e:"🔥",
+  ing:[["去骨雞腿肉","1片"],["洋蔥","1/4顆"],["鴻喜菇","半包"],["牛奶","200ml"]],
+  sea:[["韓式辣椒醬","1大匙"],["無鹽奶油","15g"],["低筋麵粉","1大匙"],["醬油","1小匙"],["糖","1小匙"],["鹽","少許"],["黑胡椒","少許"]],
+  st:["雞肉切塊，撒鹽和黑胡椒。","煎到表面上色後取出。","奶油炒洋蔥和菇，撒麵粉拌炒。","慢慢倒入牛奶攪勻，加辣椒醬、醬油、糖，放回雞肉煮到濃稠。"],
+  tip:"奶醬會中和辣醬的刺激，微辣剛好。"},
+ {id:"ic08",n:"無水蔬菜燉雞",o:"無水蔬菜燉雞",s:"ic",u:IC+"475356",a:"ijustcookit",t:60,sv:"2人份",c:"燉煮",e:"🥦",
+  ing:[["去骨雞腿肉","1片"],["洋蔥","1/2顆"],["高麗菜","1/4顆"],["紅蘿蔔","1/3根"],["花椰菜","半顆"],["鴻喜菇","半包"],["玉米粒","3大匙"],["蔥","1支"]],
+  sea:[["蠔油","1大匙"],["鹽","少許"],["糖","少許"],["黑胡椒","少許"],["香油","少許"]],
+  st:["蔬菜切塊，雞肉用鹽和黑胡椒抓一下。","洋蔥鋪鍋底，依序疊紅蘿蔔、高麗菜、菇和雞肉。","蓋鍋小火燜，靠蔬菜出水燉熟，約 20 分鐘。","加花椰菜、玉米再燜 5 分鐘，用蠔油、糖調味，淋香油。"],
+  tip:"快煮鍋火力強，要顧著別燒焦，必要時加一點水。"},
+ {id:"ic09",n:"瓜仔肉",o:"瓜仔肉",s:"ic",u:IC+"494710",a:"依依",t:45,sv:"3–4人份（可備餐）",c:"燉煮",e:"🥒",
+  ing:[["豬絞肉","300g"],["脆瓜","1罐"],["蒜頭","3瓣"]],
+  sea:[["醬油","約脆瓜罐 1/3"],["水","約脆瓜罐 1 罐"]],
+  st:["蒜切末，脆瓜切碎。","絞肉和脆瓜、蒜末拌勻。","放進鍋裡，加醬油、脆瓜汁和水煮滾。","蓋鍋小火燉約 30 分鐘。"],
+  tip:"用脆瓜罐當量杯，比例好記。"},
+ {id:"ic10",n:"老黃瓜燉排骨湯",o:"老黃瓜燉排骨湯（一鍋到底降火去濕氣）",s:"ic",u:IC+"493493",a:"角落媽媽的家常餐桌",t:60,sv:"2人份",c:"湯鍋",e:"🍵",
+  ing:[["排骨","300g"],["老黃瓜","1條"],["薑","3片"],["紅棗","5顆"],["陳皮","1小片"]],
+  sea:[["鹽","少許"]],
+  st:["排骨先汆燙去血水。","老黃瓜去皮去籽切塊。","全部放進鍋裡加水淹過，煮滾轉小火燉約 40 分鐘。","用鹽調味。"],
+  tip:"悶熱的天氣喝，清爽不膩。"}
+];
+
+let ALL = RECIPES.slice(), BY_ID = Object.fromEntries(ALL.map(r=>[r.id,r]));
+function rebuild(){ ALL = RECIPES.concat(state.custom); BY_ID = Object.fromEntries(ALL.map(r=>[r.id,r])); }
+const CATS = ["麵","飯","湯鍋","燉煮","快炒","輕食","甜品"];
+const SRC = {ic:"愛料理",cp:"Cookpad",my:"我的食譜"};
+const EMOS = ["🍲","🍜","🍚","🍛","🍳","🥘","🍗","🥩","🐟","🦐","🥬","🥕","🍄","🧀","🍝","🥟","🍠","🍮"];
+
+const ALIAS = {
+  "青蔥":"蔥","蔥花":"蔥","蒜頭":"蒜","蒜粒":"蒜","大蒜":"蒜","蒜瓣":"蒜",
+  "去骨雞腿肉":"雞腿","無骨雞腿排":"雞腿","雞腿排":"雞腿","雞腿肉":"雞腿",
+  "火鍋肉片":"肉片","火鍋豬肉片":"豬肉片","梅花肉片":"豬肉片","豬五花肉片":"豬肉片",
+  "牛番茄":"番茄","砂糖":"糖","白胡椒粉":"白胡椒","黑胡椒粒":"黑胡椒","板豆腐":"豆腐",
+  "麵線":"麵","麵條":"麵","拉麵":"麵","全脂牛奶":"牛奶","無鹽奶油":"奶油","橄欖油":"油"
+};
+const SKIP = new Set(["水"]);
+function canon(n){ n=String(n).replace(/[（(].*?[)）]/g,"").trim(); return ALIAS[n]||n; }
+function inFridge(name, kind){
+  const c = canon(name);
+  const pools = kind ? [state.fridge[kind]] : [state.fridge.food, state.fridge.season];
+  return pools.some(list=>list.some(f=>{
+    const fc = canon(f);
+    if(fc===c) return true;
+    return fc.length>=2 && (c.includes(fc) || (c.length>=2 && fc.includes(c)));
+  }));
+}
+function matchScore(r){
+  const list = r.ing.filter(i=>!SKIP.has(i[0]));
+  const have = list.filter(i=>inFridge(i[0])).length;
+  return {have, total:list.length, ratio: list.length? have/list.length : 0};
+}
+
+const WD = ["日","一","二","三","四","五","六"];
+const MON = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const pad = n=>String(n).padStart(2,"0");
+const ymd = d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parse = s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d);};
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+const md = d=>(d.getMonth()+1)+"/"+d.getDate();
+function weekOf(d){const s=addDays(d,-d.getDay());return [...Array(7)].map((_,i)=>addDays(s,i));}
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+
+const LS_KEY = "xiaoguo-planner-v1";
+function seedState(){
+  return {plan:{}, settings:{weekendOff:true}, cookOn:{}, custom:[], fridge:{food:[], season:[]}};
+}
+function valid(s){return s && typeof s==="object" && s.plan && s.fridge && Array.isArray(s.fridge.food) && Array.isArray(s.fridge.season);}
+function normalize(s){ if(!Array.isArray(s.custom)) s.custom=[];  if(!s.settings||typeof s.settings!=="object") s.settings={weekendOff:true}; if(typeof s.settings.weekendOff!=="boolean") s.settings.weekendOff=true; if(!s.cookOn||typeof s.cookOn!=="object") s.cookOn={}; return s; }
+let state = normalize((function(){ try{ const s=JSON.parse(localStorage.getItem(LS_KEY)); if(valid(s)) return s; }catch(e){} return seedState(); })());
+rebuild();
+function isWeekend(key){ const w=parse(key).getDay(); return w===0||w===6; }
+function isOff(key){ return state.settings.weekendOff && isWeekend(key) && !state.cookOn[key]; }
+function persist(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+}
+
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function pal(id){let h=0;for(const ch of id)h=(h*31+ch.charCodeAt(0))%997;return "p"+(h%4);}
+function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),1900);}
+function dayPlan(key){return state.plan[key]||[];}
+
+let viewMonth = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+let selected = new Date(TODAY);
+
+function rcardHTML(r, extra, attr){
+  const m = matchScore(r);
+  return `<button class="rcard" ${attr||"data-open"}="${r.id}">
+    <span class="thumb ${pal(r.id)}" aria-hidden="true">${esc(r.e)}</span>
+    <span class="rinfo">
+      <span class="rname">${esc(r.n)}</span>
+      <span class="rmeta"><span class="tag ${r.s}">${SRC[r.s]}</span><span>${r.t} 分鐘</span><span>${esc(r.c)}</span>${extra?`<span>冰箱有 ${m.have}/${m.total}</span>`:""}</span>
+      ${extra?`<span class="bar"><i style="width:${Math.round(m.ratio*100)}%"></i></span>`:""}
+    </span>
+    <span class="arrow" aria-hidden="true">›</span>
+  </button>`;
+}
+
+/* 首頁 */
+function renderToday(){
+  const list = dayPlan(ymd(TODAY)).map(id=>BY_ID[id]).filter(Boolean);
+  const el = $("#todayLine");
+  const date = `${TODAY.getMonth()+1}月${TODAY.getDate()}日 星期${WD[TODAY.getDay()]}`;
+  if(isOff(ymd(TODAY))){ el.innerHTML = `<div><span>${date}</span><br><strong>週末休假，今天不開伙</strong></div><button class="btn light sm" data-cookon="${ymd(TODAY)}">今天還是要煮</button>`; return; }
+  el.innerHTML = list.length
+    ? `<div><span>${date}</span><br><strong>今天煮 ${esc(list[0].n)}${list.length>1?` 等 ${list.length} 道`:""}</strong></div><button class="btn light sm" data-open-today="${list[0].id}">看做法</button>`
+    : `<div><span>${date}</span><br><strong>今天還沒排菜</strong></div><button class="btn light solid sm" data-goto="pick">幫我選一道</button>`;
+}
+function renderCalendar(){
+  $("#monthTitle").textContent = viewMonth.getFullYear()+" 年 "+(viewMonth.getMonth()+1)+" 月";
+  $("#monthLatin").textContent = MON[viewMonth.getMonth()];
+  let html = WD.map(w=>`<div class="dow">${w}</div>`).join("");
+  const start = addDays(viewMonth, -viewMonth.getDay());
+  const selWeek = new Set(weekOf(selected).map(ymd));
+  const tk = ymd(TODAY), sk = ymd(selected);
+  for(let i=0;i<42;i++){
+    const d = addDays(start,i), k = ymd(d);
+    if(i===35 && d.getMonth()!==viewMonth.getMonth()) break;
+    const ids = dayPlan(k);
+    const emo = ids.slice(0,2).map(id=>BY_ID[id]?BY_ID[id].e:"").join("") + (ids.length>2?"+":"");
+    const cls = ["day", d.getMonth()!==viewMonth.getMonth()?"out":"", selWeek.has(k)&&k!==sk?"wk":"", k===tk?"today":"", k===sk?"sel":""].join(" ");
+    const off = isOff(k);
+    html += `<button class="${cls}" data-date="${k}" aria-pressed="${k===sk}" aria-label="${d.getMonth()+1}月${d.getDate()}日${off?"，休假":ids.length?`，${ids.length} 道菜`:""}"><span class="n">${d.getDate()}</span>${off?`<span class="off">休</span>`:`<span class="e">${emo}</span>`}</button>`;
+  }
+  $("#calGrid").innerHTML = html;
+  $("#weekendOff").checked = state.settings.weekendOff;
+}
+function renderDay(){
+  const k = ymd(selected), isToday = k===ymd(TODAY);
+  $("#dayTitle").textContent = isToday ? "今日食譜" : `${selected.getMonth()+1}月${selected.getDate()}日 食譜`;
+  const ids = dayPlan(k);
+  $("#dayCount").textContent = ids.length ? `星期${WD[selected.getDay()]}，${ids.length} 道菜` : `星期${WD[selected.getDay()]}`;
+  $("#btnDayNeeds").textContent = isToday ? "今日所需食材" : "這天所需食材";
+  $("#btnDayNeeds").disabled = $("#btnAddDish").disabled = isOff(k);
+  $("#btnDayNeeds").style.opacity = $("#btnAddDish").style.opacity = isOff(k) ? ".35" : "";
+  if(isOff(k)){
+    $("#dayCount").textContent = `星期${WD[selected.getDay()]}`;
+    $("#menuList").innerHTML = `<div class="restday"><span style="font-size:30px">🌿</span><h3>週末休假</h3><p>今天小鍋也休息，不排菜、不列入採買。${ids.length?`<br>原本排的 ${ids.length} 道菜先暫停保留。`:""}</p><div class="row"><button class="btn sm" data-cookon="${k}">這天還是要煮</button></div></div>`;
+    return;
+  }
+  const back = state.settings.weekendOff && isWeekend(k) && state.cookOn[k] ? `<p class="note">這天原本是休假日，<button data-cookoff="${k}">改回休假</button></p>` : "";
+  $("#menuList").innerHTML = back + (ids.length ? ids.map(id=>BY_ID[id]).filter(Boolean).map(r=>rcardHTML(r)).join("")
+    : `<div class="empty">這天還沒有排菜。<div class="row"><button class="btn sm" data-add="1">＋ 加一道</button><button class="btn soft sm" data-goto="pick">幫我抽</button></div></div>`);
+}
+
+/* 冰箱 */
+function renderFridge(){
+  ["food","season"].forEach(kind=>{
+    const items = state.fridge[kind];
+    $(kind==="food"?"#foodPills":"#seasonPills").innerHTML = items.length
+      ? items.map((f,i)=>`<span class="pill ${kind==="season"?"s":""}">${esc(f)}<button data-del="${kind}:${i}" aria-label="移除${esc(f)}">✕</button></span>`).join("")
+      : `<span class="sub">還空空的，先放幾樣進來吧。</span>`;
+    const freq = {};
+    ALL.forEach(r=>(kind==="food"?r.ing:r.sea).forEach(([n])=>{ if(SKIP.has(n)) return; const c=canon(n); freq[c]=(freq[c]||0)+1; }));
+    const sug = Object.entries(freq).filter(([n])=>!inFridge(n,kind)).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    $(kind==="food"?"#foodSug":"#seasonSug").innerHTML = sug.length ? `<p>快煮鍋食譜常用到</p><div class="row" style="gap:6px">${sug.map(([n])=>`<button data-sug="${kind}:${esc(n)}">＋ ${esc(n)}</button>`).join("")}</div>` : "";
+  });
+}
+function addFridge(kind, name){
+  name = String(name).trim(); if(!name) return false;
+  if(state.fridge[kind].includes(name)){ toast(`${name} 已經在冰箱裡`); return false; }
+  state.fridge[kind].push(name); persist(); return true;
+}
+
+/* 吃什麼 */
+let activeCats = new Set(), lastPick = null;
+function renderCatFilters(){
+  $("#catFilters").innerHTML = `<button class="f" data-cat="" aria-pressed="${activeCats.size===0}">全部</button>` + CATS.map(c=>`<button class="f" data-cat="${c}" aria-pressed="${activeCats.has(c)}">${c}</button>`).join("");
+}
+function renderLib(){
+  const q = $("#libSearch").value.trim(), sort = $("#libSort").value;
+  let list = ALL.filter(r=>!q || r.n.includes(q) || r.o.includes(q) || r.ing.some(i=>i[0].includes(q)||canon(i[0]).includes(q)));
+  if(sort==="fridge") list.sort((a,b)=>matchScore(b).ratio-matchScore(a).ratio || a.t-b.t);
+  else if(sort==="time") list.sort((a,b)=>a.t-b.t);
+  else list.sort((a,b)=>a.s.localeCompare(b.s)||a.id.localeCompare(b.id));
+  $("#libCount").textContent = `${list.length} recipes`;
+  $("#libList").innerHTML = list.length ? list.map(r=>rcardHTML(r,true)).join("") : `<div class="empty">找不到「${esc(q)}」，換個關鍵字試試。</div>`;
+}
+function gacha(){
+  let pool = ALL.filter(r=>(activeCats.size===0||activeCats.has(r.c)) && (!$("#fQuick").checked || r.t<=20));
+  if(!pool.length){ $("#gachaResult").innerHTML = `<div class="result"><p class="sub">這個條件抽不到，少選一個條件再試一次。</p></div>`; return; }
+  if(pool.length>1 && lastPick) pool = pool.filter(r=>r.id!==lastPick);
+  let r;
+  if($("#fFridge").checked){
+    const w = pool.map(x=>0.15+matchScore(x).ratio*3); let t=Math.random()*w.reduce((a,b)=>a+b,0);
+    r = pool[pool.length-1]; for(let i=0;i<pool.length;i++){ t-=w[i]; if(t<=0){ r=pool[i]; break; } }
+  }else r = pool[Math.floor(Math.random()*pool.length)];
+  lastPick = r.id;
+  const pot = $("#gachaPot"); pot.classList.remove("shake"); void pot.offsetWidth; pot.classList.add("shake");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const where = ymd(selected)===ymd(TODAY) ? "今天" : md(selected);
+  setTimeout(()=>{
+    const m = matchScore(r);
+    $("#gachaResult").innerHTML = `<div class="result">
+      <div class="dh" style="margin:0"><span class="thumb ${pal(r.id)}">${r.e}</span><div>
+        <span class="rname" style="font-size:22px">${esc(r.n)}</span>
+        <span class="rmeta"><span class="tag ${r.s}">${SRC[r.s]}</span><span>${r.t} 分鐘</span><span>冰箱有 ${m.have}/${m.total}</span></span></div></div>
+      <div class="row"><button class="btn solid sm" data-open="${r.id}">看做法</button><button class="btn soft sm" data-plan="${r.id}">排進${where}</button><button class="btn sm" id="again">再換一道</button></div>
+    </div>`;
+  }, reduce?0:650);
+}
+
+/* 面板 */
+let lastFocus = null, sheetCtx = null;
+function openSheet(title, body){
+  lastFocus = document.activeElement;
+  $("#sheet").innerHTML = `<div class="sheet-head"><h3 id="sheetTitle">${title}</h3><button class="x" data-close aria-label="關閉">✕</button></div>${body}`;
+  $("#overlay").classList.remove("hidden"); document.body.style.overflow="hidden"; $("#sheet").scrollTop=0;
+  setTimeout(()=>{const x=$("#sheet .x"); x&&x.focus();},30);
+}
+function closeSheet(){ $("#overlay").classList.add("hidden"); document.body.style.overflow=""; sheetCtx=null; if(lastFocus&&lastFocus.focus) lastFocus.focus(); }
+function ingRows(list, kind){
+  return list.filter(([n])=>!SKIP.has(n)).map(([n,q])=>`<li><span class="nm">${esc(n)}</span><span class="qty">${esc(q)}</span>${inFridge(n,kind)?`<span class="have">冰箱有</span>`:`<span class="miss">要買</span>`}</li>`).join("");
+}
+function openRecipe(id, fromDate){
+  const r = BY_ID[id]; if(!r) return;
+  sheetCtx = {type:"recipe", id, fromDate};
+  const water = r.sea.find(s=>s[0]==="水");
+  const onDay = fromDate && dayPlan(fromDate).includes(id);
+  const mine = r.s==="my";
+  openSheet(`${esc(r.n)}<small>${mine?"我自己新增的食譜":`原作者 ${esc(r.a)}，${SRC[r.s]}`}</small>`, `
+    <div class="dh"><span class="thumb ${pal(r.id)}">${esc(r.e)}</span>
+      <div class="rmeta" style="font-size:14px"><span class="tag ${r.s}">${SRC[r.s]}</span><span>約 ${r.t} 分鐘</span><span>${esc(r.sv)}</span><span>${esc(r.c)}</span></div></div>
+    <div class="block"><h4>食材</h4><ul class="il">${ingRows(r.ing,"food")}</ul></div>
+    <div class="block"><h4>調味料</h4><ul class="il">${ingRows(r.sea,"season")||`<li><span class="nm sub">使用麵的調味包即可</span></li>`}${water?`<li><span class="nm">水</span><span class="qty">${esc(water[1])}</span></li>`:""}</ul></div>
+    <div class="block"><h4>快煮鍋做法</h4>${r.st.length?`<ol class="steps">${r.st.map(s=>`<li><span>${esc(s)}</span></li>`).join("")}</ol>`:`<p class="sub">還沒寫步驟，按「編輯」補上吧。</p>`}${r.tip?`<div class="tipbox">小訣竅：${esc(r.tip)}</div>`:""}</div>
+    ${mine ? (r.u?`<p class="sub" style="margin-top:18px">參考連結：<a href="${esc(r.u)}" target="_blank" rel="noopener">${esc(r.u)}</a></p>`:"")
+      : `<p class="sub" style="margin-top:18px">步驟為重點整理，完整圖文請看原食譜〈<a href="${r.u}" target="_blank" rel="noopener">${esc(r.o)}</a>〉</p>`}
+    ${mine?`<div class="mine-actions"><button class="btn sm" data-editrecipe="${r.id}">編輯食譜</button><button class="btn sm" data-delrecipe="${r.id}">刪除食譜</button></div>`:""}
+    <div class="addrow"><label for="addDate">排進</label><input type="date" id="addDate" value="${fromDate||ymd(selected)}">
+      <button class="btn solid sm" data-plan-date="${r.id}">加入菜單</button>${onDay?`<button class="btn sm" data-remove="${fromDate}:${r.id}">從這天移除</button>`:""}</div>`);
+}
+function aggregate(keys){
+  const out = {food:new Map(), season:new Map()}; let dishes=0;
+  keys.filter(k=>!isOff(k)).forEach(k=>dayPlan(k).forEach(id=>{
+    const r=BY_ID[id]; if(!r) return; dishes++;
+    [["food",r.ing],["season",r.sea]].forEach(([kind,list])=>list.forEach(([n,q])=>{
+      if(SKIP.has(n)) return; const c=canon(n);
+      if(!out[kind].has(c)) out[kind].set(c,{name:c,uses:[]});
+      out[kind].get(c).uses.push({q, r:r.n, d:k});
+    }));
+  }));
+  return {out, dishes};
+}
+function needsRows(map, kind, multi){
+  const rows = [...map.values()].map(x=>({...x, have:inFridge(x.name,kind)})).sort((a,b)=>(a.have-b.have)||b.uses.length-a.uses.length);
+  if(!rows.length) return `<li><span class="nm sub">不需要${kind==="food"?"食材":"調味料"}</span></li>`;
+  return rows.map(x=>`<li><span class="nm">${esc(x.name)}${x.uses.length>1?`<span class="tag" style="margin-left:8px">${x.uses.length} 道用到</span>`:""}<small>${x.uses.map(u=>`${esc(u.q)}，${esc(u.r)}${multi?`（${md(parse(u.d))}）`:""}`).join("；")}</small></span>${x.have?`<span class="have">冰箱有</span>`:`<button class="buy" data-buy="${kind}:${esc(x.name)}">買好了</button>`}</li>`).join("");
+}
+function openNeeds(mode){
+  const keys = mode==="week" ? weekOf(selected).map(ymd) : [ymd(selected)];
+  sheetCtx = {type:"needs", mode};
+  const {out, dishes} = aggregate(keys); const wk = weekOf(selected);
+  const title = mode==="week" ? `本週所需食材<small>${md(wk[0])}（日）到 ${md(wk[6])}（六）</small>`
+    : (ymd(selected)===ymd(TODAY) ? "今日所需食材" : `${md(selected)} 所需食材`) + `<small>星期${WD[selected.getDay()]}</small>`;
+  if(!dishes){ openSheet(title, `<div class="empty" style="margin-top:20px">${mode==="day"&&isOff(keys[0])?"這天是休假日，不用買菜。":(mode==="week"?"這週":"這天")+"還沒排任何菜。"}<div class="row"><button class="btn solid sm" data-add="1">＋ 加一道</button></div></div>`); return; }
+  const missF=[...out.food.values()].filter(x=>!inFridge(x.name,"food")), missS=[...out.season.values()].filter(x=>!inFridge(x.name,"season"));
+  const dishes_html = mode==="week"
+    ? `<ul class="il">${keys.map(k=>{const ids=dayPlan(k);return `<li><span class="nm">${md(parse(k))}（${WD[parse(k).getDay()]}）<small>${isOff(k)?"🌿 休假，不開伙":ids.length?ids.map(id=>BY_ID[id]?esc(BY_ID[id].e+" "+BY_ID[id].n):"").join("、"):"還沒排"}</small></span></li>`;}).join("")}</ul>`
+    : `<div class="list">${dayPlan(keys[0]).map(id=>BY_ID[id]).filter(Boolean).map(r=>rcardHTML(r)).join("")}</div>`;
+  openSheet(title, `
+    <div class="stats"><div><strong>${dishes}</strong><span>道菜</span></div><div><strong>${missF.length}</strong><span>樣食材要買</span></div><div><strong>${missS.length}</strong><span>樣調味料要買</span></div></div>
+    ${(missF.length||missS.length)?`<div class="row" style="margin-top:14px"><button class="btn sm" id="copyList">複製購物清單</button></div>`:`<p class="sub" style="margin-top:12px">冰箱全都有，可以直接開煮。</p>`}
+    <div class="block"><h4>食材</h4><ul class="il">${needsRows(out.food,"food",mode==="week")}</ul></div>
+    <div class="block"><h4>調味料</h4><ul class="il">${needsRows(out.season,"season",mode==="week")}</ul></div>
+    <div class="block"><h4>${mode==="week"?"這週的菜":"這天的菜"}</h4>${dishes_html}</div>`);
+  const cp = $("#copyList");
+  if(cp) cp.onclick = async ()=>{
+    const text = (mode==="week"?"本週":md(selected))+"購物清單\n"+(missF.length?"【食材】\n"+missF.map(x=>"・"+x.name).join("\n")+"\n":"")+(missS.length?"【調味料】\n"+missS.map(x=>"・"+x.name).join("\n"):"");
+    try{ await navigator.clipboard.writeText(text); toast("購物清單已複製"); }catch(e){ toast("無法複製，請手動記下清單"); }
+  };
+}
+function openPicker(){
+  sheetCtx = {type:"picker"};
+  openSheet(`加一道菜<small>${md(selected)}（${WD[selected.getDay()]}）</small>`, `<div class="row" style="margin-top:14px"><button class="btn soft sm" data-newrecipe="picker">＋ 找不到？自己新增一道</button></div><div class="search" style="margin-top:10px"><input id="pkSearch" type="search" placeholder="搜尋菜名或食材" aria-label="搜尋"></div><div class="list" id="pkList"></div>`);
+  const draw = ()=>{
+    const q = $("#pkSearch").value.trim();
+    const list = ALL.filter(r=>!q||r.n.includes(q)||r.ing.some(i=>i[0].includes(q))).sort((a,b)=>matchScore(b).ratio-matchScore(a).ratio);
+    $("#pkList").innerHTML = list.map(r=>rcardHTML(r,true,"data-pickadd")).join("") || `<div class="empty">找不到「${esc(q)}」</div>`;
+  };
+  $("#pkSearch").addEventListener("input", draw); draw();
+}
+function linesToPairs(text){
+  return String(text||"").split(/\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    const m = l.match(/^(.+?)[\s:：,，]+(.+)$/);
+    return m ? [m[1].trim().slice(0,30), m[2].trim().slice(0,30)] : [l.slice(0,30), "適量"];
+  });
+}
+const pairsToLines = list=>list.map(([n,q])=>n+" "+q).join("\n");
+function openRecipeForm(editId, fromPicker){
+  const r = editId ? BY_ID[editId] : null;
+  sheetCtx = {type:"form"};
+  const emo = r ? r.e : EMOS[0];
+  openSheet(r ? "編輯食譜<small>改完按儲存</small>" : "新增食譜<small>寫下你自己的快煮鍋料理</small>", `
+    <form class="rform" id="rform" novalidate>
+      <label class="fl" for="fName">菜名 <b>*</b></label>
+      <input id="fName" maxlength="40" required placeholder="例如：番茄蛋花湯" value="${r?esc(r.n):""}">
+      <span class="fl">小圖示</span>
+      <div class="emos" role="group" aria-label="選一個小圖示">${EMOS.map(e=>`<button type="button" data-emo="${e}" aria-pressed="${e===emo}">${e}</button>`).join("")}</div>
+      <input type="hidden" id="fEmo" value="${esc(emo)}">
+      <div class="three">
+        <div><label class="fl" for="fCat">分類</label><select id="fCat">${CATS.map(c=>`<option ${r&&r.c===c?"selected":""}>${c}</option>`).join("")}</select></div>
+        <div><label class="fl" for="fTime">時間（分鐘）</label><input id="fTime" type="number" min="1" max="600" inputmode="numeric" value="${r?r.t:20}"></div>
+        <div><label class="fl" for="fServ">份量</label><input id="fServ" maxlength="20" value="${r?esc(r.sv):"1人份"}"></div>
+      </div>
+      <label class="fl" for="fIng">食材 <b>*</b></label>
+      <textarea id="fIng" placeholder="雞蛋 2顆&#10;番茄 1顆&#10;蔥 1支">${r?esc(pairsToLines(r.ing)):""}</textarea>
+      <span class="hint">每行一樣，名稱和份量中間空一格；沒寫份量會顯示「適量」</span>
+      <label class="fl" for="fSea">調味料</label>
+      <textarea id="fSea" placeholder="鹽 少許&#10;香油 幾滴&#10;水 400ml">${r?esc(pairsToLines(r.sea)):""}</textarea>
+      <label class="fl" for="fSteps">做法</label>
+      <textarea id="fSteps" placeholder="番茄切塊，蛋打散&#10;水煮滾後放番茄煮 5 分鐘&#10;淋入蛋液，加鹽調味">${r?esc(r.st.join("\n")):""}</textarea>
+      <span class="hint">每行一個步驟，會自動編號</span>
+      <label class="fl" for="fTip">小訣竅（選填）</label>
+      <input id="fTip" maxlength="80" value="${r&&r.tip?esc(r.tip):""}">
+      <label class="fl" for="fUrl">參考連結（選填）</label>
+      <input id="fUrl" type="url" placeholder="https://" value="${r&&r.u?esc(r.u):""}">
+      <p class="form-err" id="fErr" role="alert"></p>
+      <div class="form-actions"><button class="btn" type="button" data-close>取消</button><button class="btn solid" type="submit">${r?"儲存修改":"儲存食譜"}</button></div>
+    </form>`);
+  $("#rform").addEventListener("submit", e=>{
+    e.preventDefault();
+    const name = $("#fName").value.trim(), ing = linesToPairs($("#fIng").value);
+    if(!name){ $("#fErr").textContent="請填菜名"; $("#fName").focus(); return; }
+    if(!ing.length){ $("#fErr").textContent="至少寫一樣食材"; $("#fIng").focus(); return; }
+    let url = $("#fUrl").value.trim(); if(url && !/^https?:\/\//i.test(url)) url = "https://"+url;
+    const t = Math.min(600, Math.max(1, parseInt($("#fTime").value,10)||20));
+    const rec = {id: r ? r.id : "my"+Date.now().toString(36), n:name, o:name, s:"my", u:url, a:"我", t,
+      sv:$("#fServ").value.trim()||"1人份", c:$("#fCat").value, e:$("#fEmo").value||EMOS[0], ing, sea:linesToPairs($("#fSea").value),
+      st:$("#fSteps").value.split(/\n/).map(s=>s.trim()).filter(Boolean).slice(0,30), tip:$("#fTip").value.trim()};
+    if(r){ state.custom = state.custom.map(x=>x.id===r.id?rec:x); }
+    else state.custom.push(rec);
+    persist(); rebuild(); renderAll();
+    if(fromPicker && !r){ addToPlan(ymd(selected), rec.id); closeSheet(); return; }
+    toast(r?"食譜已更新":"新食譜已加入"); openRecipe(rec.id, null);
+  });
+  setTimeout(()=>{ if(!r) $("#fName").focus(); },60);
+}
+function deleteRecipe(id){
+  state.custom = state.custom.filter(x=>x.id!==id);
+  Object.keys(state.plan).forEach(k=>{ state.plan[k]=state.plan[k].filter(x=>x!==id); if(!state.plan[k].length) delete state.plan[k]; });
+  persist(); rebuild(); closeSheet(); renderAll(); toast("食譜已刪除");
+}
+function refreshSheet(){ if(!sheetCtx) return; if(sheetCtx.type==="needs") openNeeds(sheetCtx.mode); else if(sheetCtx.type==="recipe") openRecipe(sheetCtx.id, sheetCtx.fromDate); }
+function addToPlan(key, id){
+  const arr = state.plan[key] ? [...state.plan[key]] : [];
+  if(arr.includes(id)){ toast("這天已經有這道菜了"); return; }
+  const wasOff = isOff(key); if(wasOff) state.cookOn[key]=true;
+  arr.push(id); state.plan[key]=arr; persist(); toast(wasOff?`${md(parse(key))} 原本休假，已改成要開伙`:`已把 ${BY_ID[id].n} 排進 ${md(parse(key))}`); renderAll();
+}
+
+function show(view){
+  ["home","fridge","pick"].forEach(v=>$("#view-"+v).classList.toggle("hidden", v!==view));
+  document.querySelectorAll(".links button").forEach(b=>b.dataset.view===view?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
+  if(view==="pick") renderLib(); if(view==="fridge") renderFridge();
+  window.scrollTo(0,0);
+}
+function renderAll(){ renderToday(); renderCalendar(); renderDay(); renderFridge(); renderCatFilters(); renderLib(); }
+
+document.addEventListener("click", e=>{
+  const t = e.target.closest("button"); if(!t) return;
+  const d = t.dataset;
+  if(d.emo){ document.querySelectorAll(".emos button").forEach(b=>b.setAttribute("aria-pressed", b===t)); $("#fEmo").value=d.emo; return; }
+  if(d.newrecipe) return openRecipeForm(null, d.newrecipe==="picker");
+  if(d.editrecipe) return openRecipeForm(d.editrecipe);
+  if(d.delrecipe){ if(t.dataset.armed!=="1"){ t.dataset.armed="1"; t.textContent="再按一次確認刪除"; t.classList.add("solid"); return; } return deleteRecipe(d.delrecipe); }
+  if(d.view) return show(d.view);
+  if(d.goto){ closeSheet(); return show(d.goto); }
+  if(d.date){ selected=parse(d.date); if(selected.getMonth()!==viewMonth.getMonth()) viewMonth=new Date(selected.getFullYear(),selected.getMonth(),1); renderCalendar(); renderDay(); return; }
+  if(d.cookon){ state.cookOn[d.cookon]=true; persist(); toast("這天改成要開伙"); renderAll(); return; }
+  if(d.cookoff){ delete state.cookOn[d.cookoff]; persist(); toast("已改回休假"); renderAll(); return; }
+  if(d.openToday) return openRecipe(d.openToday, ymd(TODAY));
+  if(d.open){ const fromDay = t.closest("#menuList"); return openRecipe(d.open, fromDay?ymd(selected):null); }
+  if(d.pickadd){ addToPlan(ymd(selected), d.pickadd); closeSheet(); return; }
+  if(d.add){ closeSheet(); return openPicker(); }
+  if(d.plan) return addToPlan(ymd(selected), d.plan);
+  if(d.planDate){ const v=$("#addDate").value; if(!v) return toast("先選一個日期"); addToPlan(v, d.planDate); sheetCtx.fromDate=v; refreshSheet(); return; }
+  if(d.remove){ const [k,id]=d.remove.split(":"); state.plan[k]=dayPlan(k).filter(x=>x!==id); if(!state.plan[k].length) delete state.plan[k]; persist(); toast("已從菜單移除"); closeSheet(); renderAll(); return; }
+  if(d.buy){ const i=d.buy.indexOf(":"), kind=d.buy.slice(0,i), n=d.buy.slice(i+1); if(addFridge(kind,n)) toast(`${n} 放進冰箱了`); renderFridge(); renderLib(); refreshSheet(); return; }
+  if(d.del){ const [kind,i]=d.del.split(":"); state.fridge[kind].splice(Number(i),1); persist(); renderFridge(); renderLib(); return; }
+  if(d.sug){ const i=d.sug.indexOf(":"); if(addFridge(d.sug.slice(0,i), d.sug.slice(i+1))){ renderFridge(); renderLib(); } return; }
+  if(d.cat!==undefined){ if(d.cat==="") activeCats.clear(); else activeCats.has(d.cat)?activeCats.delete(d.cat):activeCats.add(d.cat); renderCatFilters(); return; }
+  if("close" in d) return closeSheet();
+  if(t.id==="again"||t.id==="btnGacha"||t.id==="gachaPot") return gacha();
+});
+$("#overlay").addEventListener("click", e=>{ if(e.target.id==="overlay") closeSheet(); });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("#overlay").classList.contains("hidden")) closeSheet(); });
+$("#prevM").onclick=()=>{ viewMonth=new Date(viewMonth.getFullYear(),viewMonth.getMonth()-1,1); renderCalendar(); };
+$("#nextM").onclick=()=>{ viewMonth=new Date(viewMonth.getFullYear(),viewMonth.getMonth()+1,1); renderCalendar(); };
+$("#goToday").onclick=()=>{ selected=new Date(TODAY); viewMonth=new Date(TODAY.getFullYear(),TODAY.getMonth(),1); renderCalendar(); renderDay(); };
+$("#weekendOff").addEventListener("change", e=>{ state.settings.weekendOff=e.target.checked; persist(); toast(e.target.checked?"週末自動休假已開啟":"週末自動休假已關閉"); renderAll(); });
+$("#btnDayNeeds").onclick=()=>openNeeds("day");
+$("#btnWeekNeeds").onclick=()=>openNeeds("week");
+$("#btnAddDish").onclick=openPicker;
+$("#btnCookFridge").onclick=()=>{ $("#libSort").value="fridge"; show("pick"); setTimeout(()=>$("#libList").scrollIntoView({behavior:"smooth",block:"start"}),60); };
+document.querySelectorAll(".adder").forEach(f=>f.addEventListener("submit", e=>{
+  e.preventDefault(); const inp=f.querySelector("input");
+  inp.value.split(/[,，、\s]+/).forEach(v=>addFridge(f.dataset.kind, v)); inp.value=""; renderFridge(); renderLib();
+}));
+$("#libSearch").addEventListener("input", renderLib);
+$("#libSort").addEventListener("change", renderLib);
+
+renderAll();
+})();
+</script>
+</body>
+</html>
