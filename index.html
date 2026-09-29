@@ -652,14 +652,17 @@ function isOff(key){ return state.settings.weekendOff && isWeekend(key) && !stat
 function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
 function persist(){ saveLocal(); queuePush(); }
 
-/* ---------- Firebase 雲端同步 ---------- */
+/* ---------- Firebase 雲端同步 + 共用廚房 ---------- */
 const FB_VER = "10.12.2";
-let fb = null, fbUser = null, cloudRef = null, unsub = null, pushTimer = null, cloud = {s:"noconfig", err:""};
+let fb = null, fbUser = null, userRef = null, activeRef = null, unsub = null, kitchenUnsub = null;
+let kitchenId = null, kitchenMeta = null, joinMerge = false, dirty = false, pushTimer = null;
+let cloud = {s:"noconfig", err:""};
 function hasConfig(){ const c = window.FIREBASE_CONFIG; return !!(c && c.apiKey && c.projectId && c.appId); }
+function myName(){ return fbUser ? (fbUser.displayName || (fbUser.email||"").split("@")[0] || "我") : "我"; }
 function setCloud(s, err){ cloud = {s, err:err||""}; const b=document.getElementById("acctBtn"); if(!b) return;
   b.dataset.s = s;
-  b.textContent = s==="synced"&&fbUser ? ((fbUser.displayName||fbUser.email||"我").trim().charAt(0).toUpperCase()) : "☁";
-  b.setAttribute("aria-label", {noconfig:"雲端同步尚未設定",signedout:"登入以同步",syncing:"同步中",synced:"已同步",error:"同步出錯"}[s]||"雲端同步");
+  b.textContent = fbUser && (s==="synced"||s==="syncing") ? (kitchenId ? "👥" : myName().trim().charAt(0).toUpperCase()) : "☁";
+  b.setAttribute("aria-label", {noconfig:"雲端同步尚未設定",signedout:"登入以同步",syncing:"同步中",synced:kitchenId?"共用廚房已同步":"已同步",error:"同步出錯"}[s]||"雲端同步");
   if(sheetCtx && sheetCtx.type==="cloud") openCloud();
 }
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("無法載入 "+src)); document.head.appendChild(s); }); }
@@ -672,7 +675,7 @@ function encodeState(){
 function decodeState(d){
   const pairs = a => Array.isArray(a) ? a.map(x=>Array.isArray(x)?x:[String(x.n||""),String(x.q||"")]) : [];
   const s = {plan:d.plan||{}, fridge:d.fridge||{food:[],season:[]}, settings:d.settings, cookOn:d.cookOn, custom:(d.custom||[]).map(r=>({...r, ing:pairs(r.ing), sea:pairs(r.sea), st:Array.isArray(r.st)?r.st:[]}))};
-  s.fridge.food = s.fridge.food||[]; s.fridge.season = s.fridge.season||[];
+  s.fridge = {food:s.fridge.food||[], season:s.fridge.season||[]};
   return normalize(JSON.parse(JSON.stringify(s)));
 }
 function mergeStates(a, b){ // a = 雲端, b = 這台裝置
@@ -688,34 +691,101 @@ function applyState(next){
   if(sheetCtx && (sheetCtx.type==="recipe"||sheetCtx.type==="needs")) refreshSheet();
 }
 async function pushNow(){
-  if(!cloudRef) return;
-  setCloud("syncing");
-  try{ await cloudRef.set({...encodeState(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); setCloud("synced"); }
-  catch(e){ console.error(e); setCloud("error", e.code||e.message); }
+  const ref = activeRef; if(!ref) return;
+  dirty = false; setCloud("syncing");
+  const payload = {...encodeState(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
+  try{
+    try{ await ref.update(payload); }
+    catch(e){ if(e.code==="not-found" && ref===userRef) await ref.set({...payload, kitchenId:null}); else throw e; }
+    if(!dirty) setCloud("synced");
+  }catch(e){ console.error(e); setCloud("error", e.code||e.message); }
 }
-function queuePush(){ if(!cloudRef) return; clearTimeout(pushTimer); setCloud("syncing"); pushTimer = setTimeout(pushNow, 600); }
+function queuePush(){ if(!activeRef) return; dirty = true; clearTimeout(pushTimer); setCloud("syncing"); pushTimer = setTimeout(pushNow, 600); }
+function mergedFlag(set){ const k="xiaoguo-merged-"+(fbUser?fbUser.uid:""); try{ if(set) localStorage.setItem(k,"1"); return localStorage.getItem(k)==="1"; }catch(e){ return false; } }
+
 function startSync(u){
-  cloudRef = fb.db.collection("users").doc(u.uid);
-  const mergedKey = "xiaoguo-merged-" + u.uid;
+  userRef = fb.db.collection("users").doc(u.uid);
+  activeRef = null; kitchenId = null; kitchenMeta = null;
   let first = true;
   setCloud("syncing");
-  unsub = cloudRef.onSnapshot(async snap=>{
+  unsub = userRef.onSnapshot(async snap=>{
     if(snap.metadata.hasPendingWrites) return;
     if(first && snap.metadata.fromCache) return; // 等拿到雲端真正的資料再決定，避免離線時蓋掉雲端
     const data = snap.exists ? snap.data() : null;
-    if(first){
-      first = false;
-      let merged = false; try{ merged = localStorage.getItem(mergedKey)==="1"; }catch(e){}
-      if(!data){ await pushNow(); try{localStorage.setItem(mergedKey,"1");}catch(e){} toast("已把這台裝置的資料存到雲端"); return; }
-      if(!merged){
-        applyState(mergeStates(decodeState(data), state));
-        try{ localStorage.setItem(mergedKey,"1"); }catch(e){}
-        await pushNow(); toast("已和雲端資料合併"); return;
-      }
-    }
-    if(data){ clearTimeout(pushTimer); applyState(decodeState(data)); }
-    setCloud("synced");
+    const kid = (data && data.kitchenId) || null;
+    if(first && !mergedFlag()){ mergedFlag(true); if(kid) joinMerge = true; else if(data){ first=false; activeRef=userRef; applyState(mergeStates(decodeState(data), state)); await pushNow(); toast("已和雲端資料合併"); return; } }
+    if(kid !== kitchenId) switchKitchen(kid);
+    if(kid){ first = false; return; }
+    activeRef = userRef;
+    if(!data){ first = false; await pushNow(); toast("已把這台裝置的資料存到雲端"); return; }
+    first = false;
+    if(dirty) return;
+    applyState(decodeState(data)); setCloud("synced");
   }, err=>{ console.error(err); setCloud("error", err.code||err.message); });
+}
+function switchKitchen(kid){
+  if(kitchenUnsub){ kitchenUnsub(); kitchenUnsub = null; }
+  kitchenId = kid; kitchenMeta = null;
+  if(!kid){ activeRef = userRef; return; }
+  activeRef = null; setCloud("syncing");
+  const ref = fb.db.collection("kitchens").doc(kid);
+  kitchenUnsub = ref.onSnapshot(snap=>{
+    if(snap.metadata.hasPendingWrites) return;
+    if(!kitchenMeta && snap.metadata.fromCache) return;
+    if(!snap.exists){ toast("這個共用廚房已經不存在，回到你自己的資料"); leaveLocal(); return; }
+    const d = snap.data();
+    kitchenMeta = {id:kid, owner:d.owner, members:d.members||[], names:d.names||{}};
+    activeRef = ref;
+    if(joinMerge){ joinMerge = false; applyState(mergeStates(decodeState(d), state)); pushNow(); return; }
+    if(dirty){ setCloud("syncing"); return; }
+    applyState(decodeState(d)); setCloud("synced");
+  }, err=>{
+    console.error(err);
+    if(err.code==="permission-denied"){ toast("你已不在這個共用廚房"); leaveLocal(); }
+    else setCloud("error", err.code||err.message);
+  });
+}
+function leaveLocal(){
+  if(kitchenUnsub){ kitchenUnsub(); kitchenUnsub = null; }
+  kitchenId = null; kitchenMeta = null; activeRef = userRef;
+  if(userRef) userRef.set({kitchenId:null},{merge:true}).catch(e=>setCloud("error", e.code));
+}
+const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+function genCode(){ const a = new Uint32Array(8); crypto.getRandomValues(a); return [...a].map(n=>CODE_CHARS[n%CODE_CHARS.length]).join(""); }
+const fmtCode = c => c.slice(0,4)+"-"+c.slice(4);
+async function createKitchen(){
+  if(!fbUser) return;
+  const id = genCode(), ts = firebase.firestore.FieldValue.serverTimestamp();
+  try{
+    setCloud("syncing");
+    await fb.db.collection("kitchens").doc(id).set({...encodeState(), owner:fbUser.uid, members:[fbUser.uid], names:{[fbUser.uid]:myName()}, createdAt:ts, updatedAt:ts});
+    await userRef.set({kitchenId:id},{merge:true});
+    toast("共用廚房建好了，把邀請碼傳給對方吧");
+  }catch(e){ console.error(e); setCloud("error", e.code||e.message); }
+}
+async function joinKitchen(raw){
+  const code = String(raw||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  if(code.length!==8){ toast("邀請碼是 8 個英文或數字"); return; }
+  if(code===kitchenId){ toast("你已經在這個廚房裡了"); return; }
+  try{
+    await fb.db.collection("kitchens").doc(code).update({members: firebase.firestore.FieldValue.arrayUnion(fbUser.uid), ["names."+fbUser.uid]: myName()});
+  }catch(e){ console.error(e); toast(e.code==="permission-denied"||e.code==="not-found" ? "找不到這個邀請碼，或廚房已滿" : "加入失敗："+(e.code||e.message)); return; }
+  if(kitchenId) await leaveKitchen(true);
+  joinMerge = true;
+  await userRef.set({kitchenId:code},{merge:true});
+  toast("已加入共用廚房，你的食譜和冰箱也一起帶進去了");
+}
+async function leaveKitchen(silent){
+  if(!kitchenId) return;
+  const ref = fb.db.collection("kitchens").doc(kitchenId), meta = kitchenMeta;
+  if(kitchenUnsub){ kitchenUnsub(); kitchenUnsub = null; }
+  try{
+    if(meta && meta.members.length<=1 && meta.owner===fbUser.uid) await ref.delete();
+    else await ref.update({members: firebase.firestore.FieldValue.arrayRemove(fbUser.uid), ["names."+fbUser.uid]: firebase.firestore.FieldValue.delete()});
+  }catch(e){ console.error(e); }
+  kitchenId = null; kitchenMeta = null;
+  await userRef.set({kitchenId:null},{merge:true}).catch(()=>{});
+  if(!silent) toast("已離開共用廚房，回到你自己的資料");
 }
 async function initFirebase(){
   if(!hasConfig()){ setCloud("noconfig"); return; }
@@ -728,7 +798,8 @@ async function initFirebase(){
     setCloud("signedout");
     fb.auth.getRedirectResult().catch(e=>{ if(e && e.code) setCloud("error", e.code); });
     fb.auth.onAuthStateChanged(u=>{
-      if(unsub){ unsub(); unsub=null; } cloudRef = null; fbUser = u;
+      if(unsub){ unsub(); unsub=null; } if(kitchenUnsub){ kitchenUnsub(); kitchenUnsub=null; }
+      userRef = activeRef = null; kitchenId = kitchenMeta = null; fbUser = u;
       if(u) startSync(u); else setCloud("signedout");
     });
   }catch(e){ console.error(e); setCloud("error", e.message); }
@@ -744,23 +815,43 @@ async function signIn(){
 }
 const ERR_HINT = {
   "auth/unauthorized-domain":"這個網址還沒加進 Firebase。到 Authentication → 設定 → 授權網域，新增 jennywei111.github.io。",
-  "permission-denied":"Firestore 的安全規則沒設好，請照說明貼上規則並發布。",
+  "permission-denied":"Firestore 的安全規則沒設好，請照說明貼上最新的規則並發布。",
   "auth/operation-not-allowed":"Google 登入還沒開啟。到 Authentication → 登入方式，啟用 Google。",
   "auth/configuration-not-found":"Authentication 還沒啟用。到 Firebase 主控台的 Authentication 按「開始使用」。",
   "auth/invalid-api-key":"FIREBASE_CONFIG 的 apiKey 貼錯了，請重新複製。",
   "failed-precondition":"Firestore 資料庫還沒建立。到 Firestore Database 按「建立資料庫」。",
   "unavailable":"目前連不上雲端，網路恢復後會自動同步。"
 };
+function kitchenHTML(){
+  if(kitchenId && kitchenMeta){
+    const names = kitchenMeta.members.map(uid=>esc(kitchenMeta.names[uid]||"成員")+(uid===fbUser.uid?"（你）":"")).join("、");
+    return `<div class="cloud-card"><p>👥 共用廚房</p>
+      <p class="sub">成員：${names}<br>大家看到的是同一份菜單、冰箱和食譜，任何人改了都會即時更新。</p>
+      <p class="sub" style="margin-top:12px">邀請碼</p>
+      <div class="row"><strong style="font-family:var(--latin);font-size:30px;letter-spacing:.12em">${fmtCode(kitchenId)}</strong><button class="btn sm" data-copycode="${kitchenId}">複製</button></div>
+      <p class="sub" style="margin-top:6px">對方登入後，在這裡輸入邀請碼就能加入。</p>
+      <div class="row" style="margin-top:14px"><button class="btn sm" data-leavekitchen="1">離開共用廚房</button></div></div>`;
+  }
+  if(kitchenId) return `<div class="cloud-card"><p class="sub">正在連線到共用廚房…</p></div>`;
+  return `<div class="cloud-card"><p>👥 共用廚房</p>
+    <p class="sub">想跟另一個人一起排菜、共用冰箱和採買清單？建立一個共用廚房，把邀請碼傳給對方。</p>
+    <div class="row" style="margin-top:10px"><button class="btn solid sm" data-mkkitchen="1">建立共用廚房</button></div>
+    <p class="sub" style="margin-top:16px">收到邀請碼了？</p>
+    <div class="adder" style="margin-top:4px"><input id="joinCode" placeholder="輸入 8 碼邀請碼" maxlength="9" autocapitalize="characters" autocomplete="off" aria-label="邀請碼"><button class="btn sm" data-joinkitchen="1">加入</button></div>
+    <p class="sub" style="margin-top:8px">加入後，你現在的食譜和冰箱會一起帶進共用廚房；離開時會回到你自己原本的資料。</p></div>`;
+}
 function openCloud(){
   const wasOpen = sheetCtx && sheetCtx.type==="cloud";
+  const typed = wasOpen && $("#joinCode") ? $("#joinCode").value : "";
   sheetCtx = {type:"cloud"};
   const s = cloud.s; let body = "";
   if(s==="noconfig") body = `<div class="cloud-card"><p>雲端同步還沒設定好。</p><p class="sub">要先在 Firebase 建立專案，把設定貼到 <code>index.html</code> 最上方的 <code>FIREBASE_CONFIG</code>。在那之前，資料只存在這台裝置的瀏覽器裡。</p></div>`;
-  else if(s==="signedout") body = `<div class="cloud-card"><p>用 Google 帳號登入後，電腦和手機會自動同步菜單、冰箱和你新增的食譜。</p><p class="sub">第一次登入時，這台裝置上已有的資料會和雲端合併，不會被洗掉。</p><button class="btn solid gbtn" data-signin="1"><b style="font-family:var(--latin);font-size:18px">G</b>用 Google 登入</button></div>`;
-  else if(s==="error") body = `<div class="cloud-card"><p>同步出了點問題。</p><p class="sub">${esc(ERR_HINT[cloud.err]||("錯誤代碼："+cloud.err))}</p><div class="row">${fbUser?`<button class="btn sm" data-signout="1">登出</button>`:`<button class="btn solid sm" data-signin="1">重新登入</button>`}</div></div>`;
-  else body = `<div class="cloud-card"><p>${s==="syncing"?"同步中…":"✓ 已同步"}</p><p class="sub">登入帳號：${esc(fbUser?(fbUser.email||fbUser.displayName||""):"")}<br>在任何裝置用同一個 Google 帳號登入，資料都會自動更新。</p><button class="btn sm" data-signout="1">登出</button></div>`;
-  const html = `<div class="sheet-head"><h3 id="sheetTitle">雲端同步<small>電腦、手機看到同一份資料</small></h3><button class="x" data-close aria-label="關閉">✕</button></div>${body}`;
+  else if(s==="signedout") body = `<div class="cloud-card"><p>用 Google 帳號登入後，電腦和手機會自動同步菜單、冰箱和你新增的食譜，也可以跟另一個人共用廚房。</p><p class="sub">第一次登入時，這台裝置上已有的資料會和雲端合併，不會被洗掉。</p><button class="btn solid gbtn" data-signin="1"><b style="font-family:var(--latin);font-size:18px">G</b>用 Google 登入</button></div>`;
+  else if(s==="error") body = `<div class="cloud-card"><p>同步出了點問題。</p><p class="sub">${esc(ERR_HINT[cloud.err]||("錯誤代碼："+cloud.err))}</p><div class="row">${fbUser?`<button class="btn sm" data-signout="1">登出</button>`:`<button class="btn solid sm" data-signin="1">重新登入</button>`}</div></div>${fbUser&&kitchenId?kitchenHTML():""}`;
+  else body = `<div class="cloud-card"><p>${s==="syncing"?"同步中…":"✓ 已同步"}</p><p class="sub">登入帳號：${esc(fbUser?(fbUser.email||fbUser.displayName||""):"")}<br>在任何裝置用同一個 Google 帳號登入，資料都會自動更新。</p><button class="btn sm" data-signout="1">登出</button></div>${kitchenHTML()}`;
+  const html = `<div class="sheet-head"><h3 id="sheetTitle">雲端同步<small>電腦、手機、兩個人都看到同一份</small></h3><button class="x" data-close aria-label="關閉">✕</button></div>${body}`;
   if(wasOpen) $("#sheet").innerHTML = html; else { openSheet("",""); $("#sheet").innerHTML = html; sheetCtx = {type:"cloud"}; }
+  if(typed && $("#joinCode")) $("#joinCode").value = typed;
 }
 
 const $ = s=>document.querySelector(s);
@@ -1052,6 +1143,10 @@ document.addEventListener("click", e=>{
   if(t.id==="acctBtn") return openCloud();
   if(d.signin) return signIn();
   if(d.signout){ if(fb) fb.auth.signOut(); toast("已登出，資料仍保留在這台裝置"); return; }
+  if(d.mkkitchen) return createKitchen();
+  if(d.joinkitchen) return joinKitchen($("#joinCode") && $("#joinCode").value);
+  if(d.leavekitchen){ if(t.dataset.armed!=="1"){ t.dataset.armed="1"; t.textContent="再按一次確認離開"; t.classList.add("solid"); return; } return leaveKitchen(false); }
+  if(d.copycode){ const c=fmtCode(d.copycode); (navigator.clipboard?navigator.clipboard.writeText(c):Promise.reject()).then(()=>toast("邀請碼已複製："+c)).catch(()=>toast("邀請碼："+c)); return; }
   if(d.emo){ document.querySelectorAll(".emos button").forEach(b=>b.setAttribute("aria-pressed", b===t)); $("#fEmo").value=d.emo; return; }
   if(d.newrecipe) return openRecipeForm(null, d.newrecipe==="picker");
   if(d.editrecipe) return openRecipeForm(d.editrecipe);
